@@ -1,0 +1,4 @@
+# Files To Ignore For Version Control Of SecureSoftwareLinker repo
+.classpath
+.project
+bin

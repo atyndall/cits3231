@@ -1,0 +1,15 @@
+[submodule "src/clients"]
+	path = src/clients
+	url = git@bitbucket.org:greenham/cits3231-assignment-clients.git
+[submodule "src/services"]
+	path = src/services
+	url = git@bitbucket.org:greenham/cits3231-assignment-services.git
+[submodule "src/servers"]
+	path = src/servers
+	url = git@bitbucket.org:greenham/cits3231-assignment-servers.git
+[submodule "src/common"]
+	path = src/common
+	url = git@bitbucket.org:greenham/cits3231-assignment-common.git
+[submodule "tests"]
+	path = tests
+	url = git@bitbucket.org:greenham/cits3231-assignment-test-suite.git
