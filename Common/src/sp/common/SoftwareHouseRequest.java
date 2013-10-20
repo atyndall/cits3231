@@ -9,6 +9,7 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -38,7 +39,7 @@ public class SoftwareHouseRequest {
 		}
 	}
 	
-	public SoftwareHouseRequest(LinkingRequest request, Key publicKey, String symmetricEncryption){
+	public SoftwareHouseRequest(LinkingRequest request, PublicKey publicKey, String symmetricEncryption){
 		EncryptionReceipt receipt = encryptRequest(request, symmetricEncryption);
 		encryptedRequest = receipt.getEncrypted();
 		symmetricEncryptionKey = encryptSymmetricKey(receipt.getKey(), publicKey);
