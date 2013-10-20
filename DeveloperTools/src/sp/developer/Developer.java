@@ -68,6 +68,17 @@ public class Developer extends Node{
 		//TODO: Write code to send to Link Broker
 	}
 
+	
+	
+	
+	protected void log(String message){
+		System.out.print(message);
+	}
+	
+	protected void logError(String error){
+		log("Error: " + error);
+	}
+	
 	private void createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
 		for(String softwareHouse : libraries.keySet()){
 			LinkingRequest linkingRequest = new LinkingRequest();

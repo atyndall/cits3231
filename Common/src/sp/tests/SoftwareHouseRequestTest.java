@@ -63,7 +63,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 
 	@Test
-	public void shouldCorrectlyEncryptAndDecryptRequestForSingleLibrary(){
+	public void shouldCorrectlyEncryptAndDecryptRequestForSingleLibrary() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, publicKey, symmetricEncryption);
 		
 		assertIsSameSoftwareHouseRequest(linkRequestForSingleLibrary,
@@ -71,7 +71,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 	
 	@Test
-	public void shouldCorrectlyEncryptAndDecryptRequestForMultipleLibraries(){
+	public void shouldCorrectlyEncryptAndDecryptRequestForMultipleLibraries() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForMultipleLibraries, publicKey, symmetricEncryption);
 		
 		assertIsSameSoftwareHouseRequest(linkRequestForMultipleLibraries,
@@ -79,14 +79,14 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 	
 	@Test
-	public void shouldCorrectlyEncryptAndDecryptEmptyRequest(){
+	public void shouldCorrectlyEncryptAndDecryptEmptyRequest() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(emptyLinkingRequest, publicKey, symmetricEncryption);
 		
 		assertEquals(true, request.getRequest(privateKey, symmetricEncryption).getLibraryList().isEmpty());
 	}
 	
 	@Test
-	public void shouldNotAllowLinkingRequestToBeAltered(){
+	public void shouldNotAllowLinkingRequestToBeAltered() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, publicKey, symmetricEncryption);
 		
 		LinkingRequest returnedRequest = request.getRequest(privateKey, symmetricEncryption);
@@ -103,14 +103,14 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 	
 	@Test
-	public void shouldCorrectlyReportARequestThatHasntBeenSignedAsUnsigned(){
+	public void shouldCorrectlyReportARequestThatHasntBeenSignedAsUnsigned() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
 				publicKey, symmetricEncryption);
 		assertEquals(false, request.isSigned());
 	}
 	
 	@Test
-	public void shouldCorrectlyReportARequestThatHasBeenSignedAsSigned(){
+	public void shouldCorrectlyReportARequestThatHasBeenSignedAsSigned() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
 				publicKey, symmetricEncryption);
 		request.sign(privateKey);
@@ -118,14 +118,14 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 	
 	@Test
-	public void shouldReturnAFalseSignatureCheckForAnUnsignedRequest(){
+	public void shouldReturnAFalseSignatureCheckForAnUnsignedRequest() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
 				publicKey, symmetricEncryption);
 		assertEquals(false, request.isSignatureCorrect(publicKey));
 	}
 	
 	@Test
-	public void shouldReturnATrueSignatureCheckForARequestSignedWithCorrespondingPrivateKey(){
+	public void shouldReturnATrueSignatureCheckForARequestSignedWithCorrespondingPrivateKey() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
 				publicKey, symmetricEncryption);
 		request.sign(privateKey);
@@ -134,7 +134,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 	
 	@Test
-	public void shouldReturnAFalseSignatureCheckForARequestSignedWithADifferentPrivateKey(){
+	public void shouldReturnAFalseSignatureCheckForARequestSignedWithADifferentPrivateKey() throws NoSuchAlgorithmException{
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
 				publicKey, symmetricEncryption);
 		request.sign(privateKey);

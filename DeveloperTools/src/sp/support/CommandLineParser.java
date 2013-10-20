@@ -5,17 +5,6 @@ import java.util.HashMap;
 import sp.common.LoggedItem;
 
 public abstract class CommandLineParser extends LoggedItem {
-	protected abstract void displayUsage();
-	
-	@Override
-	protected void logErrorAndExit(String error){
-		displayUsage();
-		emptyLine();
-		logError(error);
-		
-		System.exit(1);
-	}
-	
 	public class ArgumentParser{
 		private HashMap<String,String>	options;
 		String error = "";
@@ -51,10 +40,10 @@ public abstract class CommandLineParser extends LoggedItem {
 			return errorPrefix + ": " + error;
 		}
 	}
-	
+
 	public class FileParser extends ArgumentParser {
 		private String[] acceptableFileTypes;
-
+	
 		@Override
 		public boolean parse(String parameter) {	
 			recordParsedAtLeastOneArgument();
@@ -97,5 +86,24 @@ public abstract class CommandLineParser extends LoggedItem {
 			
 			return list;
 		}
+	}
+
+	protected abstract void displayUsage();
+	
+	protected void log(String message){
+		System.out.print(message);
+	}
+	
+	protected void logError(String error){
+		log("Error: " + error);
+	}
+	
+	@Override
+	protected void logErrorAndExit(String error){
+		displayUsage();
+		emptyLine();
+		logError(error);
+		
+		System.exit(1);
 	}
 }

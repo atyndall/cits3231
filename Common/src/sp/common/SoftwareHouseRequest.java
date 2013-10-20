@@ -12,6 +12,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.util.HashMap;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -26,6 +27,8 @@ public class SoftwareHouseRequest {
 	private byte[] encryptedRequest;
 	private byte[] symmetricEncryptionKey;
 	private byte[] senderSignature;
+	
+	private HashMap<String,String> errors;
 	
 	private class EncryptionReceipt{
 		SecretKey key;
@@ -43,7 +46,9 @@ public class SoftwareHouseRequest {
 		}
 	}
 	
-	public SoftwareHouseRequest(LinkingRequest request, PublicKey publicKey, String symmetricEncryption){
+	public SoftwareHouseRequest(LinkingRequest request, PublicKey publicKey, String symmetricEncryption) 
+			throws NoSuchAlgorithmException{
+		
 		EncryptionReceipt receipt = encryptRequest(request, symmetricEncryption);
 		encryptedRequest = receipt.getEncrypted();
 		symmetricEncryptionKey = encryptSymmetricKey(receipt.getKey(), publicKey);
@@ -154,8 +159,9 @@ public class SoftwareHouseRequest {
 	 * Encrypts a Software House's request for linked libraries and adds it
 	 * to a list of other encrypted Software house requests.
 	 * @param softwareHouse Name of the Software House to encrypt the request for
+	 * @throws NoSuchAlgorithmException 
 	 */
-	private EncryptionReceipt encryptRequest(LinkingRequest request, String symmetricEncryptionType) {
+	private EncryptionReceipt encryptRequest(LinkingRequest request, String symmetricEncryptionType) throws NoSuchAlgorithmException {
 		
 		byte[] encrypted = null;
 		SecretKey encryptionKey = null;
@@ -170,7 +176,7 @@ public class SoftwareHouseRequest {
 			
 			encrypted = encryptionCipher.doFinal(serialisedRequest.toByteArray());
 			
-		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | 
+		} catch (InvalidKeyException | NoSuchPaddingException | 
 				IllegalBlockSizeException | BadPaddingException e) {
 			e.printStackTrace();
 		}
@@ -209,5 +215,14 @@ public class SoftwareHouseRequest {
 		}
 		
 		return request;
+	}
+
+	private String errorMessage(String errorCode) {
+		if(errors == null){
+			errors = new HashMap<String,String>();
+		}
+		
+		return errors.get(errorCode);
+		
 	}
 }

@@ -3,12 +3,13 @@ package sp.common;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
 
@@ -20,7 +21,7 @@ public abstract class Node extends LoggedItem {
 	 * can be set on the comman line using:
 	 *  	-keystore FileLocation
 	 */
-	static protected final String DEFAULT_KEYSTORE_LOCATION = "DeveloperTools/config/truststore-developer1.jks";
+	static protected final String DEFAULT_KEYSTORE_LOCATION = "DeveloperTools/bin/truststore-developer1.jks";
 
 	/**
 	 * The default password for the keystore. This can be se using:
@@ -39,7 +40,6 @@ public abstract class Node extends LoggedItem {
 	 * The encryption parameters to use for encrypting the Software House linking
 	 * requests
 	 */
-	static protected final String DEFAULT_ENCRYPTION = "RSA";
 	
 	static protected final String DEFAULT_SYMETRICAL_ENCRYPTION = "AES";
 
@@ -54,34 +54,37 @@ public abstract class Node extends LoggedItem {
 		options = new HashMap<String, String>();
 	}
 	
-	protected Key getPrivateKey() {
-		Key privateKey = null;
+	protected PrivateKey getPrivateKey() {
+		PrivateKey privateKey = null;
 		
 		try {
 			
-			privateKey = getKeyStore().getKey(keyStoreAlias(), keyStorePassword());
+			privateKey = (PrivateKey) getKeyStore().getKey(keyStoreAlias(), keyStorePassword());
 			
 		} catch (UnrecoverableKeyException | KeyStoreException
 				| NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
+		if(privateKey == null)
+			logErrorAndExit("Could not find alias '" + keyStoreAlias() + "' in keystore.");
 		
 		return privateKey;
 	}
 	
 	protected PublicKey getPublicKey(String node) {
-		PublicKey publicKey = null;
+		Certificate cert = null;
 		
 		try {
 			
-			publicKey = (PublicKey) getKeyStore().getKey(node, keyStorePassword());
-			
-		} catch (UnrecoverableKeyException | KeyStoreException
-				| NoSuchAlgorithmException e) {
+			cert = getKeyStore().getCertificate(node);
+		} catch (KeyStoreException e) {
 			e.printStackTrace();
 		}
 		
-		return publicKey;
+		if(cert == null)
+			logErrorAndExit("Unable to locate alias '" + node + "' in keyStore. All linking requests were cancelled.");
+		
+		return cert.getPublicKey();
 	}
 	
 
@@ -99,9 +102,18 @@ public abstract class Node extends LoggedItem {
 				keyStore.load(keyStoreFile, keyStorePassword() );
 			} catch (FileNotFoundException e) {
 				logErrorAndExit("Unable to find keystore file: " + keyStoreFile());
-			} catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException  e) {
+			} catch (KeyStoreException e){
+				logErrorAndExit("Unsupported keystore file: " + keyStoreFile());
+			} catch(CertificateException e){
+				logErrorAndExit("eystore file '" + keyStoreFile() + "' contained a certificate that could not be opened.");
+			} catch(IOException  e) {
+				if(e.getCause() instanceof UnrecoverableKeyException)
+					logErrorAndExit("Incorred password for keystore file: " + keyStoreFile());
+				
+				logErrorAndExit("Corrupted or inaccessible keystore file: " + keyStoreFile());
+			} catch(NoSuchAlgorithmException e){
 				e.printStackTrace();
-			} 
+			}
 		}
 		
 		return keyStore;
@@ -116,12 +128,8 @@ public abstract class Node extends LoggedItem {
 		return options.get("keyStoreAlias");
 	}
 
-	protected String encryption() {
-		return options.get("encryption");
-	}
-	
 	protected String symmetricEncryption(){
-		return options.get("symmetricEncryption");
+		return options.get("symmetricEncryptionType");
 	}
 
 	protected String keyStoreFile() {
