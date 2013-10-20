@@ -7,6 +7,7 @@ import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
@@ -68,12 +69,12 @@ public abstract class Node extends LoggedItem {
 		return privateKey;
 	}
 	
-	protected Key getPublicKey(String node) {
-		Key publicKey = null;
+	protected PublicKey getPublicKey(String node) {
+		PublicKey publicKey = null;
 		
 		try {
 			
-			publicKey = getKeyStore().getKey(node, keyStorePassword());
+			publicKey = (PublicKey) getKeyStore().getKey(node, keyStorePassword());
 			
 		} catch (UnrecoverableKeyException | KeyStoreException
 				| NoSuchAlgorithmException e) {

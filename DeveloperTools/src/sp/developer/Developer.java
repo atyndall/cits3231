@@ -68,28 +68,15 @@ public class Developer extends Node{
 	}
 
 	private void createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
-		for(String softwareHouseName : libraries.keySet()){
+		for(String softwareHouse : libraries.keySet()){
 			LinkingRequest linkingRequest = new LinkingRequest();
-			linkingRequest.addLibraries(libraries.get(softwareHouseName));
+			linkingRequest.addLibraries(libraries.get(softwareHouse));
 			
 			SoftwareHouseRequest request = new SoftwareHouseRequest(linkingRequest, 
-					encryption(), getPublicKey(softwareHouseName), 
-					symmetricEncryption());
+					getPublicKey(softwareHouse), encryption());
 			
-			addSoftwareHouseRequest(softwareHouseName, request);
+			softwareHouseRequests.put(softwareHouse, request);
 		}
-	}
-
-	/**
-	 * Adds an encrypted request to the list of encrypted requests ready to be
-	 * send to the Link Broker.
-	 * @param softwareHouse Name of the Software House to add the encrypted request
-	 * under
-	 * @param encryptedRequest The encrypted request itself
-	 */
-	private void addSoftwareHouseRequest(String softwareHouse,
-			SoftwareHouseRequest softwareHouseRequest) {
-		softwareHouseRequests.put(softwareHouse, softwareHouseRequest);
 	}
 
 	private void setOptions(HashMap<String, String> customOptions) {
