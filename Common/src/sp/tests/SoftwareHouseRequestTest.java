@@ -17,7 +17,6 @@ import sp.common.SoftwareHouseRequest;
 
 public class SoftwareHouseRequestTest extends TestHelper {
 	static Certificate developerCertificate;
-	//static Developer developer;
 	static String softwareHouseName = "developer1";
 	static String libraryName = "LibraryName";
 	static String encryption = "RSA";
@@ -38,8 +37,8 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		PrivateKey privateKey = pair.getPrivate();
 		PublicKey publicKey = pair.getPublic();
 		
-		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequest, encryption, publicKey, symmetricEncryption);
-		assertEquals(linkRequest, request.getRequest(privateKey, encryption, symmetricEncryption));
+		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequest, publicKey, symmetricEncryption);
+		assertEquals(libraryList.get(0), request.getRequest(privateKey, symmetricEncryption).getLibraryList().get(0));
 	}
 
 }
