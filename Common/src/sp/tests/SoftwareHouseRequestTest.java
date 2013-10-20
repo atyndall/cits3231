@@ -58,19 +58,22 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	public void shouldCorrectlyEncryptAndDecryptRequestForSingleLibrary(){
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, publicKey, symmetricEncryption);
 		
-		assertIsSameRequest(request.getRequest(privateKey, symmetricEncryption));
+		assertIsSameSoftwareHouseRequest(linkRequestForSingleLibrary,
+				request.getRequest(privateKey, symmetricEncryption));
 	}
 	
 	@Test
 	public void shouldCorrectlyEncryptAndDecryptRequestForMultipleLibraries(){
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForMultipleLibraries, publicKey, symmetricEncryption);
 		
-		assertIsSameRequest(request.getRequest(privateKey, symmetricEncryption));
+		assertIsSameSoftwareHouseRequest(linkRequestForMultipleLibraries,
+				request.getRequest(privateKey, symmetricEncryption));
 	}
 	
 	@Test
 	public void shouldCorrectlyEncryptAndDecryptEmptyRequest(){
 		SoftwareHouseRequest request = new SoftwareHouseRequest(emptyLinkingRequest, publicKey, symmetricEncryption);
+		
 		assertEquals(true, request.getRequest(privateKey, symmetricEncryption).getLibraryList().isEmpty());
 	}
 	
@@ -82,23 +85,36 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		
 		
 		modifyRequest(returnedRequest);
-		assert(hasBeenModified(returnedRequest));
+		
+		assertIsNotSameSoftwareHouseRequest(linkRequestForSingleLibrary, returnedRequest);
 		
 		SoftwareHouseRequest secondRequest = new SoftwareHouseRequest(linkRequestForSingleLibrary, publicKey, symmetricEncryption);
 		
-		assertIsSameRequest(request.getRequest(privateKey, symmetricEncryption));
+		assertIsSameSoftwareHouseRequest(linkRequestForSingleLibrary,
+				secondRequest.getRequest(privateKey, symmetricEncryption));
 	}
 
-	private void assertIsSameRequest(LinkingRequest request) {
-		ArrayList<String> libraryList = request.getLibraryList();
+	private void assertIsNotSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
+		ArrayList<String> requestLibraryList = request.getLibraryList();
+		ArrayList<String> originalLibraryList = request.getLibraryList();
 		
-		for(int i=0; i<libraryList.size(); i++){
-			assertEquals(request.getLibraryList().get(i),libraryList.get(i));
+		assertEquals(requestLibraryList.size(), originalLibraryList.size());  
+				
+		for(int i=0; i<requestLibraryList.size(); i++){
+			assertFalse(requestLibraryList.get(i).equals(originalLibraryList.get(i)));
 		}
+		
 	}
 
-	private boolean hasBeenModified(LinkingRequest returnedRequest) {
-		return returnedRequest.getLibraryList().size() != linkRequestForSingleLibrary.getLibraryList().size();
+	private void assertIsSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
+		ArrayList<String> requestLibraryList = request.getLibraryList();
+		ArrayList<String> originalLibraryList = request.getLibraryList();
+		
+		assertEquals(requestLibraryList.size(), originalLibraryList.size());  
+				
+		for(int i=0; i<requestLibraryList.size(); i++){
+			assertEquals(requestLibraryList.get(i),originalLibraryList.get(i));
+		}
 	}
 
 	private void modifyRequest(LinkingRequest originalRequest) {
