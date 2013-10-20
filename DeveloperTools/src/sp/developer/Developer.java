@@ -1,5 +1,6 @@
 package sp.developer;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -72,8 +73,17 @@ public class Developer extends Node{
 			LinkingRequest linkingRequest = new LinkingRequest();
 			linkingRequest.addLibraries(libraries.get(softwareHouse));
 			
-			SoftwareHouseRequest request = new SoftwareHouseRequest(linkingRequest, 
-					getPublicKey(softwareHouse), encryption());
+			SoftwareHouseRequest request = null;
+			
+			try {
+				request = new SoftwareHouseRequest(linkingRequest, 
+						getPublicKey(softwareHouse), symmetricEncryption());
+				
+				request.sign(getPrivateKey());
+				
+			} catch (NoSuchAlgorithmException e) {
+				logErrorAndExit("Unsupported encryption algorithm: " + symmetricEncryption());
+			}
 			
 			softwareHouseRequests.put(softwareHouse, request);
 		}
@@ -92,8 +102,7 @@ public class Developer extends Node{
 			setDefault("keyStorePassword", DEFAULT_KEYSTORE_PASSWORD);
 			setDefault("keyStoreType", DEFAULT_KEYSTORE_TYPE);
 			setDefault("keyStoreAlias", DEFAULT_KEYSTORE_ALIAS);
-			setDefault("encryption", DEFAULT_ENCRYPTION);
-			setDefault("symmetricEncryption", DEFAULT_SYMETRICAL_ENCRYPTION);
+			setDefault("symmetricEncryptionType", DEFAULT_SYMETRICAL_ENCRYPTION);
 		}
 		
 		return defaultOptions;

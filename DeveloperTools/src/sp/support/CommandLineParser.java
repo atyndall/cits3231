@@ -7,15 +7,40 @@ import sp.common.LoggedItem;
 public abstract class CommandLineParser extends LoggedItem {
 	protected abstract void displayUsage();
 	
-	public abstract class ArgumentParser{
+	@Override
+	protected void logErrorAndExit(String error){
+		displayUsage();
+		emptyLine();
+		logError(error);
+		
+		System.exit(1);
+	}
+	
+	public class ArgumentParser{
+		private HashMap<String,String>	options;
 		String error = "";
 		String errorPrefix;
 		boolean parsedAnArgument = false;
+		private String parameterName;
 		
-		public abstract boolean parse(String paramter);
+		public boolean parse(String parameter){
+			recordParameter(parameter);
+			return true;
+		}
+		
+		public ArgumentParser(HashMap<String,String> options, String parameterName, 
+				String errorPrefix){
+			this.options = options;
+			this.errorPrefix = errorPrefix;
+			this.parameterName = parameterName;
+		}
 		
 		public void recordParsedAtLeastOneArgument(){
 			parsedAnArgument = true;
+		}
+		
+		protected void recordParameter(String parameter){
+			options.put(parameterName, parameter);
 		}
 		
 		public boolean hasParsedAnArgument(){
@@ -28,8 +53,6 @@ public abstract class CommandLineParser extends LoggedItem {
 	}
 	
 	public class FileParser extends ArgumentParser {
-		private HashMap<String,String>	options;
-		private String parameterName;
 		private String[] acceptableFileTypes;
 
 		@Override
@@ -46,15 +69,11 @@ public abstract class CommandLineParser extends LoggedItem {
 			
 		}
 		
-		protected void recordParameter(String parameter){
-			options.put(parameterName, parameter);
-		}
-		
 		public FileParser(HashMap<String,String> options, String parameterName, 
 				String errorPrefix, String[] acceptableFiletypes){
-			this.options = options;
-			this.errorPrefix = errorPrefix;
-			this.parameterName = parameterName;
+			
+			super(options, parameterName, errorPrefix);
+			
 			this.acceptableFileTypes = acceptableFiletypes;
 		}
 		
