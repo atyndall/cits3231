@@ -10,6 +10,8 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -20,8 +22,10 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 public class SoftwareHouseRequest {
-	byte[] encryptedRequest;
-	byte[] symmetricEncryptionKey;
+	private static final String signatureAlgorithm = "SHA1withRSA";
+	private byte[] encryptedRequest;
+	private byte[] symmetricEncryptionKey;
+	private byte[] senderSignature;
 	
 	private class EncryptionReceipt{
 		SecretKey key;
@@ -65,7 +69,48 @@ public class SoftwareHouseRequest {
 		return deserialiseRequest(decryptedRequest);
 	}
 
-	 private byte[] encryptSymmetricKey(SecretKey secretKey, Key publicKey) {
+	 public boolean isSigned() {
+		return senderSignature != null;
+	}
+
+	public boolean isSignatureCorrect(PublicKey publicKey) {
+		if(senderSignature == null)
+			return false;
+		
+		Signature signature;
+		boolean verified = false;
+
+		try {
+			signature = Signature.getInstance(signatureAlgorithm);
+			signature.initVerify(publicKey);
+			signature.update(encryptedRequest);
+			signature.update(symmetricEncryptionKey);
+			verified = signature.verify(senderSignature); 
+		} catch (NoSuchAlgorithmException | InvalidKeyException | 
+				SignatureException e) {
+			e.printStackTrace();
+		}
+		
+		return verified;
+	}
+
+	public void sign(PrivateKey privateKey) {
+		Signature signature;
+		
+		try {
+			signature = Signature.getInstance(signatureAlgorithm);
+			signature.initSign(privateKey);
+			signature.update(encryptedRequest);
+			signature.update(symmetricEncryptionKey);
+			senderSignature = signature.sign(); 
+		} catch (NoSuchAlgorithmException | InvalidKeyException | 
+				SignatureException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+	private byte[] encryptSymmetricKey(SecretKey secretKey, Key publicKey) {
          
          byte[] encrypted = null;
          

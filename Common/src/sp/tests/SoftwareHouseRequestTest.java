@@ -25,6 +25,9 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	
 	static PrivateKey privateKey;
 	static PublicKey publicKey;
+
+	static PrivateKey differentPrivateKey;
+	static PublicKey differentPublicKey;
 	
 	static LinkingRequest linkRequestForSingleLibrary;
 	static LinkingRequest linkRequestForMultipleLibraries;
@@ -37,6 +40,11 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		
 		privateKey = pair.getPrivate();
 		publicKey = pair.getPublic();
+		
+		pair = keyGen.generateKeyPair();
+		
+		differentPrivateKey = pair.getPrivate();
+		differentPublicKey = pair.getPublic();
 		
 		ArrayList<String> libraryList = new ArrayList<String>();
 		libraryList.add(libraryNames[0]);
@@ -53,7 +61,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		
 		linkRequestForMultipleLibraries.addLibraries(libraryList);
 	}
-	
+
 	@Test
 	public void shouldCorrectlyEncryptAndDecryptRequestForSingleLibrary(){
 		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, publicKey, symmetricEncryption);
@@ -93,7 +101,50 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		assertIsSameSoftwareHouseRequest(linkRequestForSingleLibrary,
 				secondRequest.getRequest(privateKey, symmetricEncryption));
 	}
-
+	
+	@Test
+	public void shouldCorrectlyReportARequestThatHasntBeenSignedAsUnsigned(){
+		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
+				publicKey, symmetricEncryption);
+		assertEquals(false, request.isSigned());
+	}
+	
+	@Test
+	public void shouldCorrectlyReportARequestThatHasBeenSignedAsSigned(){
+		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
+				publicKey, symmetricEncryption);
+		request.sign(privateKey);
+		assertEquals(true, request.isSigned());
+	}
+	
+	@Test
+	public void shouldReturnAFalseSignatureCheckForAnUnsignedRequest(){
+		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
+				publicKey, symmetricEncryption);
+		assertEquals(false, request.isSignatureCorrect(publicKey));
+	}
+	
+	@Test
+	public void shouldReturnATrueSignatureCheckForARequestSignedWithCorrespondingPrivateKey(){
+		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
+				publicKey, symmetricEncryption);
+		request.sign(privateKey);
+		
+		assertEquals(true, request.isSignatureCorrect(publicKey));
+	}
+	
+	@Test
+	public void shouldReturnAFalseSignatureCheckForARequestSignedWithADifferentPrivateKey(){
+		SoftwareHouseRequest request = new SoftwareHouseRequest(linkRequestForSingleLibrary, 
+				publicKey, symmetricEncryption);
+		request.sign(privateKey);
+		
+		assertEquals(false, request.isSignatureCorrect(differentPublicKey));
+	}
+	
+	
+	
+	
 	private void assertIsNotSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
 		ArrayList<String> requestLibraryList = request.getLibraryList();
 		ArrayList<String> originalLibraryList = request.getLibraryList();
