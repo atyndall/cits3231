@@ -1,4 +1,17 @@
-# Files To Ignore For Version Control Of SecureSoftwareLinker repo
-.classpath
-.project
-bin
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+bin/
+tmp/
+tmp/
+.settings/
+.metadata/
+
+*.tmp
+*.bak
+*.swp
+*~.nib
