@@ -1,5 +1,6 @@
 package sp.developer;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -67,29 +68,36 @@ public class Developer extends Node{
 		//TODO: Write code to send to Link Broker
 	}
 
-	private void createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
-		for(String softwareHouseName : libraries.keySet()){
-			LinkingRequest linkingRequest = new LinkingRequest();
-			linkingRequest.addLibraries(libraries.get(softwareHouseName));
-			
-			SoftwareHouseRequest request = new SoftwareHouseRequest(linkingRequest, 
-					encryption(), getPublicKey(softwareHouseName), 
-					symmetricEncryption());
-			
-			addSoftwareHouseRequest(softwareHouseName, request);
-		}
+	
+	
+	
+	protected void log(String message){
+		System.out.print(message);
 	}
-
-	/**
-	 * Adds an encrypted request to the list of encrypted requests ready to be
-	 * send to the Link Broker.
-	 * @param softwareHouse Name of the Software House to add the encrypted request
-	 * under
-	 * @param encryptedRequest The encrypted request itself
-	 */
-	private void addSoftwareHouseRequest(String softwareHouse,
-			SoftwareHouseRequest softwareHouseRequest) {
-		softwareHouseRequests.put(softwareHouse, softwareHouseRequest);
+	
+	protected void logError(String error){
+		log("Error: " + error);
+	}
+	
+	private void createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
+		for(String softwareHouse : libraries.keySet()){
+			LinkingRequest linkingRequest = new LinkingRequest();
+			linkingRequest.addLibraries(libraries.get(softwareHouse));
+			
+			SoftwareHouseRequest request = null;
+			
+			try {
+				request = new SoftwareHouseRequest(linkingRequest, 
+						getPublicKey(softwareHouse), symmetricEncryption());
+				
+				request.sign(getPrivateKey());
+				
+			} catch (NoSuchAlgorithmException e) {
+				logErrorAndExit("Unsupported encryption algorithm: " + symmetricEncryption());
+			}
+			
+			softwareHouseRequests.put(softwareHouse, request);
+		}
 	}
 
 	private void setOptions(HashMap<String, String> customOptions) {
@@ -105,8 +113,7 @@ public class Developer extends Node{
 			setDefault("keyStorePassword", DEFAULT_KEYSTORE_PASSWORD);
 			setDefault("keyStoreType", DEFAULT_KEYSTORE_TYPE);
 			setDefault("keyStoreAlias", DEFAULT_KEYSTORE_ALIAS);
-			setDefault("encryption", DEFAULT_ENCRYPTION);
-			setDefault("symmetricEncryption", DEFAULT_SYMETRICAL_ENCRYPTION);
+			setDefault("symmetricEncryptionType", DEFAULT_SYMETRICAL_ENCRYPTION);
 		}
 		
 		return defaultOptions;

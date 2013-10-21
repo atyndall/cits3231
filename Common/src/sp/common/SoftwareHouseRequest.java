@@ -8,6 +8,11 @@ import java.io.ObjectOutputStream;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.util.HashMap;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -15,24 +20,49 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 public class SoftwareHouseRequest {
-	byte[] encryptedRequest;
-	byte[] symmetricEncryptionKey;
+	private static final String signatureAlgorithm = "SHA1withRSA";
+	private byte[] encryptedRequest;
+	private byte[] symmetricEncryptionKey;
+	private byte[] senderSignature;
 	
-	public SoftwareHouseRequest(LinkingRequest request, String encryption, Key publicKey, String symmetricEncryption){
-		wrapKey(encryptRequest(request, symmetricEncryption), publicKey, encryption);
+	private HashMap<String,String> errors;
+	
+	private class EncryptionReceipt{
+		SecretKey key;
+		byte[] encrypted;
+		
+		public EncryptionReceipt(SecretKey key, byte[] encrypted){
+			this.key = key;
+			this.encrypted = encrypted;
+		}
+		
+		public byte[] getEncrypted(){ return encrypted.clone(); }
+		
+		public SecretKey getKey(){ 
+			return key;
+		}
 	}
 	
-	public SoftwareHouseRequest getRequest(Key encryptionKey, String encryption, String symmetricEncryption) {
-		Key symmetricEncryptionKey = unwrapKey(encryptionKey, encryption);
+	public SoftwareHouseRequest(LinkingRequest request, PublicKey publicKey, String symmetricEncryption) 
+			throws NoSuchAlgorithmException{
+		
+		EncryptionReceipt receipt = encryptRequest(request, symmetricEncryption);
+		encryptedRequest = receipt.getEncrypted();
+		symmetricEncryptionKey = encryptSymmetricKey(receipt.getKey(), publicKey);
+	}
+	
+	public LinkingRequest getRequest(PrivateKey privateKey, String symmetricalEncryptionType) {
+		SecretKey secretKey = decryptSymmetricKey(privateKey,symmetricalEncryptionType);
 		
 		byte[] decryptedRequest = null;
 		
 		try {
-			Cipher encryptionCipher = Cipher.getInstance(symmetricEncryption);
+			Cipher encryptionCipher = Cipher.getInstance(secretKey.getAlgorithm());
+			encryptionCipher.init(Cipher.DECRYPT_MODE, secretKey);
 			
-			encryptionCipher.init(Cipher.DECRYPT_MODE, symmetricEncryptionKey);
 			decryptedRequest = encryptionCipher.doFinal(encryptedRequest);
 			
 		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
@@ -41,65 +71,117 @@ public class SoftwareHouseRequest {
 			e.printStackTrace();
 		}
 		
-		SoftwareHouseRequest request = deserialiseRequest(decryptedRequest);
-		
-		return request;
+		return deserialiseRequest(decryptedRequest);
 	}
 
-	private void wrapKey(SecretKey secretKey, Key publicKey, String encryption) {
+	 public boolean isSigned() {
+		return senderSignature != null;
+	}
+
+	public boolean isSignatureCorrect(PublicKey publicKey) {
+		if(senderSignature == null)
+			return false;
 		
+		Signature signature;
+		boolean verified = false;
+
 		try {
-			Cipher encryptionCipher = Cipher.getInstance(encryption);
-			
-			encryptionCipher.init(Cipher.WRAP_MODE, publicKey);
-			symmetricEncryptionKey = encryptionCipher.wrap(secretKey);
-		} catch (InvalidKeyException | NoSuchAlgorithmException
-				| NoSuchPaddingException | IllegalBlockSizeException e) {
+			signature = Signature.getInstance(signatureAlgorithm);
+			signature.initVerify(publicKey);
+			signature.update(encryptedRequest);
+			signature.update(symmetricEncryptionKey);
+			verified = signature.verify(senderSignature); 
+		} catch (NoSuchAlgorithmException | InvalidKeyException | 
+				SignatureException e) {
 			e.printStackTrace();
 		}
+		
+		return verified;
 	}
+
+	public void sign(PrivateKey privateKey) {
+		Signature signature;
+		
+		try {
+			signature = Signature.getInstance(signatureAlgorithm);
+			signature.initSign(privateKey);
+			signature.update(encryptedRequest);
+			signature.update(symmetricEncryptionKey);
+			senderSignature = signature.sign(); 
+		} catch (NoSuchAlgorithmException | InvalidKeyException | 
+				SignatureException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+	private byte[] encryptSymmetricKey(SecretKey secretKey, Key publicKey) {
+         
+         byte[] encrypted = null;
+         
+         try {
+                 Cipher encryptionCipher = Cipher.getInstance(publicKey.getAlgorithm());
+                 
+                 encryptionCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+                 encrypted = encryptionCipher.doFinal(secretKey.getEncoded());
+                 
+         } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
+                 e.printStackTrace();
+         } catch (IllegalBlockSizeException | BadPaddingException e) {
+                 e.printStackTrace();
+         }
+         
+         return encrypted;
+ }
 	
-	private Key unwrapKey(Key encryptionKey, String encryption) {
-		Key unwrappedKey = null;
-		
-		try {
-			Cipher encryptionCipher = Cipher.getInstance(encryption);
-			
-			encryptionCipher.init(Cipher.UNWRAP_MODE, encryptionKey);
-			unwrappedKey = encryptionCipher.unwrap(symmetricEncryptionKey, encryption, Cipher.PUBLIC_KEY);
-			
-		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
-			e.printStackTrace();
-		}
-		
-		return unwrappedKey;
-	}
+	 private SecretKey decryptSymmetricKey(Key encryptionKey, String symmetricalEncryptionType){
+         SecretKey key = null;
+         
+         String encryption = encryptionKey.getAlgorithm();
+         
+         try {
+				 Cipher encryptionCipher = Cipher.getInstance(encryption);
+                 encryptionCipher.init(Cipher.DECRYPT_MODE, encryptionKey);
+                 
+                 byte[] decryptedKey = encryptionCipher.doFinal(symmetricEncryptionKey);
+                 
+                 key = new SecretKeySpec(decryptedKey, symmetricalEncryptionType);
+                 
+         } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | 
+        		 IllegalBlockSizeException | BadPaddingException e) {
+                 e.printStackTrace();
+         }
+         
+         return key;
+	 }
 
 	/**
 	 * Encrypts a Software House's request for linked libraries and adds it
 	 * to a list of other encrypted Software house requests.
 	 * @param softwareHouse Name of the Software House to encrypt the request for
+	 * @throws NoSuchAlgorithmException 
 	 */
-	private SecretKey encryptRequest(LinkingRequest request, String symmetricEncryption) {
+	private EncryptionReceipt encryptRequest(LinkingRequest request, String symmetricEncryptionType) throws NoSuchAlgorithmException {
 		
+		byte[] encrypted = null;
 		SecretKey encryptionKey = null;
 		
 		ByteArrayOutputStream serialisedRequest = serialiseRequest(request);
 		
 		try {
-			encryptionKey = KeyGenerator.getInstance(symmetricEncryption).generateKey();
-			Cipher encryptionCipher = Cipher.getInstance(symmetricEncryption);
+			encryptionKey = KeyGenerator.getInstance(symmetricEncryptionType).generateKey();
 			
+			Cipher encryptionCipher = Cipher.getInstance(symmetricEncryptionType);
 			encryptionCipher.init(Cipher.ENCRYPT_MODE, encryptionKey);
-			encryptedRequest = encryptionCipher.doFinal(serialisedRequest.toByteArray());
 			
-		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
-			e.printStackTrace();
-		} catch (IllegalBlockSizeException | BadPaddingException e) {
+			encrypted = encryptionCipher.doFinal(serialisedRequest.toByteArray());
+			
+		} catch (InvalidKeyException | NoSuchPaddingException | 
+				IllegalBlockSizeException | BadPaddingException e) {
 			e.printStackTrace();
 		}
 		
-		return encryptionKey;
+		return new EncryptionReceipt(encryptionKey, encrypted);
 	}
 	
 	private ByteArrayOutputStream serialiseRequest(LinkingRequest request) {
@@ -115,15 +197,16 @@ public class SoftwareHouseRequest {
 		return serialisedRequest;
 	}
 	
-	private SoftwareHouseRequest deserialiseRequest(byte[] serialisedRequest) {
+	private LinkingRequest deserialiseRequest(byte[] serialisedRequest) {
 		ByteArrayInputStream serialisedRequestInputStream = new ByteArrayInputStream(serialisedRequest);
 		ObjectInputStream requestObjectInputStream;
-		SoftwareHouseRequest request = null;
+		
+		LinkingRequest request = null;
 		
 		try {
 			
 			requestObjectInputStream = new ObjectInputStream(serialisedRequestInputStream);
-			request = (SoftwareHouseRequest) requestObjectInputStream.readObject();
+			request = (LinkingRequest) requestObjectInputStream.readObject();
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -132,5 +215,14 @@ public class SoftwareHouseRequest {
 		}
 		
 		return request;
+	}
+
+	private String errorMessage(String errorCode) {
+		if(errors == null){
+			errors = new HashMap<String,String>();
+		}
+		
+		return errors.get(errorCode);
+		
 	}
 }

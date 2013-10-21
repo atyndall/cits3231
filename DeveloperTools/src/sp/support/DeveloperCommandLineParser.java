@@ -8,6 +8,8 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 		HashMap<String,ArrayList<String>> libraries;
 		
 		public LibraryNameParser(HashMap<String,ArrayList<String>> libraries) {
+			super( null, null, null);
+			
 			this.libraries = libraries;
 			errorPrefix = "Library Error";
 		}
@@ -58,15 +60,40 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 		if(args.length > 0){
 			
 			for(int i=0; i<args.length; i++){
-				if(args[i].equals("-libs")){
-					argumentParser = new LibraryNameParser(libraries);
-					i++;
-				} else if (args[i].equals("-keystore")){
-					argumentParser = new FileParser(options, "keyStoreFile", "KeyStore", 
-							new String[]{".jks"});
-					i++;
+				switch(args[i]){
+					case "-libs":
+						argumentParser = new LibraryNameParser(libraries);
+						break;
+						
+					case "-keyStore":
+						argumentParser = new FileParser(options, "keyStoreFile", "Key Store", 
+								new String[]{".jks"});
+						break;
+						
+					case "-keyStorePassword": 
+						argumentParser = new ArgumentParser(options, "keyStorePassword", "Key Store Password");
+						break;
+						
+					case "-keyStoreType": 
+						argumentParser = new ArgumentParser(options, "keyStoreType", "Key Store Type");
+						break;
+						
+					case "-keyStoreAlias": 
+						argumentParser = new ArgumentParser(options, "keyStoreAlias", "Key Store Alias");
+						break;
+						
+					case "-symmetricEncryptionType": 
+						argumentParser = new ArgumentParser(options, "symmetricEncryptionType", "Symmetric Encryption Type");
+						break;
+						
+					default:
+						if(args[i].substring(0, 1).equals("-"))
+							logErrorAndExit("Unknown option '" + args[i] + "'");
+						i--;
 				}
-
+				
+				i++;
+					
 				if(i >= args.length){ 
 					logErrorAndExit(argumentParser.getError() + "Undefined or missing.");
 				} else if(!argumentParser.parse(args[i])){
@@ -80,6 +107,9 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 			System.exit(1);
 		}
 		
+		if(libraries.isEmpty())
+			logErrorAndExit(new LibraryNameParser(libraries).getError() + 
+					"Undefined or missing.");
 		
 		return new RunOptions(options,libraries);
 	}
@@ -92,11 +122,17 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 		emptyLine();
 		display("Usage:");
 		emptyLine();
-		display("Developer jar-file-path -keystore [store-location] -libs [library-names]");
+		display("Developer JarFilePath [options] -libs LibraryNames ");
 		emptyLine();
-		display("		jar-file-path	- Directory path to the .jar file to link to the remote libraries");
-		display("		keystore		- Location of the keystore. Must be a .jks file");	
-		display("		library-names	- Space separated list of library names in the format SoftwareHouse:Library");	
-		
+		display("	JarFilepath		- Directory path to the .jar file to link to the remote libraries");			
+		display("	Librarynames	- Space separated list of library names in the format SoftwareHouse:Library");	
+		emptyLine();
+		display("Options:");
+		emptyLine();
+		display("	-keyStore					Location of the keystore. Must be a .jks file");
+		display("	-keyStorePassword			Password for key store file; Assumed to be the same password to access all entries in the key store file.");
+		display("	-keyStoreType				Filetype of key store; currently ignored and defualts to .jks");
+		display("	-keyStoreAlias				Alias in key store associated with developer's private key");
+		display("	-symmetricEncryptionType 	Type of symmetric encryption to use for linking requests");
 	}
 }

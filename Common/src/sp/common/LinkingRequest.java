@@ -17,7 +17,7 @@ public class LinkingRequest implements Serializable{
 	private ArrayList<String> libraryList;
 	
 	public LinkingRequest(){
-		this.license =  DeveloperLicense.fromStream(LinkingRequest.class.getResourceAsStream(TEST_LICENSE_NAME));
+//		this.license =  DeveloperLicense.fromStream(LinkingRequest.class.getResourceAsStream(TEST_LICENSE_NAME));
 		this.libraryList = new ArrayList<String>();
 	}
 	
