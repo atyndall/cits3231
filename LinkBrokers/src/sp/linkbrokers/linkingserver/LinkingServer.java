@@ -76,44 +76,35 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
 	
 	// http://stackoverflow.com/questions/13575795/programatically-add-class-to-existing-jar-file
 	// http://stackoverflow.com/questions/3048669/how-can-i-add-entries-to-an-existing-zip-file-in-java
-	public static void addFilesToExistingZip(File zipFile,
+	public static void addFilesToExistingZip(File jarFile,
 	         Map<String,File> files) throws IOException {
-	        // get a temp file
-	    File tempFile = File.createTempFile(zipFile.getName(), null);
-	        // delete it, otherwise you cannot rename your existing zip to it.
-	    tempFile.delete();
-
-	    boolean renameOk=zipFile.renameTo(tempFile);
-	    if (!renameOk)
-	    {
-	        throw new RuntimeException("could not rename the file "+zipFile.getAbsolutePath()+" to "+tempFile.getAbsolutePath());
-	    }
+		
+        File tempFile = initialiseJarTmpFile(jarFile);
 	    byte[] buf = new byte[1024];
 
 	    JarInputStream zin = new JarInputStream(new FileInputStream(tempFile));
-	    JarOutputStream out = new JarOutputStream(new FileOutputStream(zipFile));
+	    JarOutputStream out = new JarOutputStream(new FileOutputStream(jarFile));
 
 	    JarEntry entry = zin.getNextJarEntry();
+	    
 	    while (entry != null) {
-	        String name = entry.getName();
-	        boolean notInFiles = true;
-	        for (Entry<String, File> e : files.entrySet()) {
-	            if (e.getKey().equals(name)) {
-	                notInFiles = false;
-	                break;
-	            }
-	        }
-	        if (notInFiles) {
+	    	String entryName = entry.getName();
+	    	
+	        if (!isFileInDatabase(entryName,files)) {
 	            // Add ZIP entry to output stream.
-	            out.putNextEntry(new JarEntry(name));
+	            out.putNextEntry(new JarEntry(entryName));
 	            // Transfer bytes from the ZIP file to the output file
+	            
 	            int len;
+	            
 	            while ((len = zin.read(buf)) > 0) {
 	                out.write(buf, 0, len);
 	            }
 	        }
+	        
 	        entry = zin.getNextJarEntry();
 	    }
+	    
 	    // Close the streams        
 	    zin.close();
 	    // Compress the files
@@ -136,6 +127,29 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
 	    tempFile.delete();
 	}
 
+	private static File initialiseJarTmpFile(File jarFile) throws IOException {
+		/**
+         * Create a temp file, delete it so existing jar file can be renamed to
+         * the current temp file
+         */
+	    File tempFile = File.createTempFile(jarFile.getName(), null);
+	    tempFile.delete();
+
+	    if (!jarFile.renameTo(tempFile))
+	        throw new RuntimeException("Could not rename the file "+
+	        		jarFile.getAbsolutePath()+" to "+tempFile.getAbsolutePath());
+		return tempFile;
+	}
+
+	private static boolean isFileInDatabase(String entryName, Map<String,File> files){
+        for (Entry<String, File> e : files.entrySet()) {
+            if (e.getKey().equals(entryName))
+                return true;
+        }
+        
+        return false;
+	}
+	
 	public JarInputStream performLink(SoftwareHouseRequest req, JarInputStream inJar) {
 		// we read the jar file to a location on the disk
 		try {
