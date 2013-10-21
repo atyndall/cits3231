@@ -7,8 +7,7 @@ import java.rmi.registry.Registry;
 
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
-import sp.developer.Developer;
-import sp.linkbrokers.linkingserver.LinkingServerInterface;
+import sp.linkbrokers.linkingserver.ILinkingServer;
 
 
 public class CommandLineLink {
@@ -29,7 +28,7 @@ public class CommandLineLink {
 		try {
 			
 			Registry reg = LocateRegistry.getRegistry(rmiRegistryAddress, linkingPort, new SslRMIClientSocketFactory());
-			LinkingServerInterface linkingSvr = (LinkingServerInterface) reg.lookup(linkingServerClassName);
+			ILinkingServer linkingSvr = (ILinkingServer) reg.lookup(linkingServerClassName);
 			
 			System.out.println(linkingSvr.giveMeCake());
 			
