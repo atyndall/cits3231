@@ -82,7 +82,7 @@ public class Developer extends Node{
 	private void createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
 		for(String softwareHouse : libraries.keySet()){
 			LinkingRequest linkingRequest = new LinkingRequest();
-			linkingRequest.addLibraries(libraries.get(softwareHouse));
+			linkingRequest.addLibraries(libraries.get(softwareHouse)); // TODO: add licenses
 			
 			SoftwareHouseRequest request = null;
 			

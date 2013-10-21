@@ -30,7 +30,7 @@ public class SoftwareHouseRequest {
 	
 	private HashMap<String,String> errors;
 	
-	private class EncryptionReceipt{
+	private class EncryptionReceipt {
 		SecretKey key;
 		byte[] encrypted;
 		
@@ -47,7 +47,7 @@ public class SoftwareHouseRequest {
 	}
 	
 	public SoftwareHouseRequest(LinkingRequest request, PublicKey publicKey, String symmetricEncryption) 
-			throws NoSuchAlgorithmException{
+			throws NoSuchAlgorithmException {
 		
 		EncryptionReceipt receipt = encryptRequest(request, symmetricEncryption);
 		encryptedRequest = receipt.getEncrypted();

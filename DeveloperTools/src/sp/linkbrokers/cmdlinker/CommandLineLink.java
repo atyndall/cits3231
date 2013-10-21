@@ -30,7 +30,8 @@ public class CommandLineLink {
 			Registry reg = LocateRegistry.getRegistry(rmiRegistryAddress, linkingPort, new SslRMIClientSocketFactory());
 			ILinkingServer linkingSvr = (ILinkingServer) reg.lookup(linkingServerClassName);
 			
-			System.out.println(linkingSvr.giveMeCake());
+			// TODO: we should actually call the linker here
+			// linkingSvr.performLink(req, inJar)
 			
 		} catch (ConnectException e) {
 			

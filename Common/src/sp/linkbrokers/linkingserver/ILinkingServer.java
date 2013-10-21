@@ -1,8 +1,11 @@
 package sp.linkbrokers.linkingserver;
 
 import java.rmi.Remote;
-import java.rmi.RemoteException;
+import java.util.jar.JarInputStream;
+import java.util.jar.JarOutputStream;
+
+import sp.common.SoftwareHouseRequest;
 
 public interface ILinkingServer extends Remote {
-	public int giveMeCake() throws RemoteException;
+	public JarInputStream performLink(SoftwareHouseRequest req, JarInputStream inJar);
 }

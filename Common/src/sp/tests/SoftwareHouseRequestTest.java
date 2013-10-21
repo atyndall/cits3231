@@ -50,7 +50,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		libraryList.add(libraryNames[0]);
 		
 		linkRequestForSingleLibrary = new LinkingRequest();
-		linkRequestForSingleLibrary.addLibraries(libraryList);
+		linkRequestForSingleLibrary.addLibraries(libraryList); // TODO: update to work with new license structure
 		
 		linkRequestForMultipleLibraries = new LinkingRequest();
 		emptyLinkingRequest = new LinkingRequest();
@@ -146,8 +146,8 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	
 	
 	private void assertIsNotSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
-		ArrayList<String> requestLibraryList = request.getLibraryList();
-		ArrayList<String> originalLibraryList = request.getLibraryList();
+		ArrayList<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
+		ArrayList<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		
 		assertEquals(requestLibraryList.size(), originalLibraryList.size());  
 				
@@ -158,8 +158,8 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 
 	private void assertIsSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
-		ArrayList<String> requestLibraryList = request.getLibraryList();
-		ArrayList<String> originalLibraryList = request.getLibraryList();
+		ArrayList<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
+		ArrayList<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		
 		assertEquals(requestLibraryList.size(), originalLibraryList.size());  
 				

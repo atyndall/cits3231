@@ -1,21 +1,100 @@
 package sp.softwarehouse.libprovidingserver;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.KeyStore;
+import java.security.KeyStore.ProtectionParameter;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
+
+import sp.common.LinkingRequest;
+import sp.common.SoftwareHouseRequest;
+import sp.softwarehouse.protectedlibrary.DeveloperLicense;
+import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
+import sp.softwarehouse.protectedlibrary.LicenseManager;
+import sp.tests.LicensingTest;
 
 public class LibProvidingServer extends UnicastRemoteObject implements ILibProvidingServer {
 	
 	private static final long serialVersionUID = 9214577972245950200L;
 	public static final int libProvidingPort = 54165;
 	
+	private static final List<String> providedLibsShort = Arrays.asList(
+			"ScienceLib", 
+			"EnterpriseLib"
+	);
+	
+	private static final List<String> providedLibs = Arrays.asList(
+			"sp/softwarehouse/protectedlibrary/sciencelib/RealScienceLib.class", 
+			"sp/softwarehouse/protectedlibrary/enterpriselib/RealEnterpriseLib.class"
+	);
+	
+	private KeyStore.PrivateKeyEntry key;
+	private LicenseManager lm;
+	private Map<String, String> mapShortToLong;
+	
 	protected LibProvidingServer() throws RemoteException {
 		super(libProvidingPort, new SslRMIClientSocketFactory(), new SslRMIServerSocketFactory(null, null, true));
+		
+		for (int i = 0; i < providedLibs.size(); i++) {
+			mapShortToLong.put(providedLibsShort.get(i), providedLibs.get(i));
+		}
+		
+		KeyStore ks;
+		try {
+			ks = KeyStore.getInstance(KeyStore.getDefaultType());
+		} catch (KeyStoreException e) {
+			e.printStackTrace();
+			return;
+		}
+		
+		InputStream fis;
+		try {
+			fis = new FileInputStream(System.getProperty("javax.net.ssl.keyStore"));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return;
+		};
+		
+		try {
+			ks.load(fis, System.getProperty("javax.net.ssl.keyStorePassword").toCharArray());
+		} catch (NoSuchAlgorithmException | CertificateException | IOException e) {
+			e.printStackTrace();
+			return;
+		}
+
+		ProtectionParameter pp = new KeyStore.PasswordProtection(System.getProperty("javax.net.ssl.keyStorePassword").toCharArray());
+		
+		try {
+			this.key = (KeyStore.PrivateKeyEntry) ks.getEntry("softwarehouse", pp);
+		} catch (NoSuchAlgorithmException | UnrecoverableEntryException
+				| KeyStoreException e) {
+			e.printStackTrace();
+			return;
+		}
+		
+		URL url = LicensingTest.class.getResource("/lm.db");
+		File lmdb = new File(url.getFile());
+		this.lm = new LicenseManager(lmdb, key.getPrivateKey());
 	}
 
 	public static void main(String args[]) {
@@ -47,8 +126,33 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
         }
 	}
 	
-	public int giveMeLib() throws RemoteException {
-		return 9; // no, you get the number 4
+	private InputStream getClassStream(String className) {
+		return LibProvidingServer.class.getResourceAsStream("classfiles/" + className + ".linkin");
+	}
+	
+	public Map<String, InputStream> getClassesToLink(SoftwareHouseRequest req)
+			throws InvalidLicenseException, Exception {
+		
+		LinkingRequest lreq = req.getRequest(key.getPrivateKey(), "AES");
+
+		List<String> libs = lreq.getLibraryList();
+		List<DeveloperLicense> licenses = lreq.getLicenses();
+		
+		Map<String, InputStream> outm = new HashMap<String, InputStream>();
+		
+		for (int i = 0; i < libs.size(); i++) {
+			if (!providedLibs.contains(libs.get(i))) throw new Exception("Non-existant lib");
+			
+			if (lm.validLicense(licenses.get(i))) {
+				lm.consumeLicense(licenses.get(i));
+			} else {
+				throw new Exception("Invalid licenses");
+			}
+			
+			outm.put(mapShortToLong.get(libs.get(i)), getClassStream(libs.get(i)));
+		}
+		
+		return outm;
 	}
 	
 }
