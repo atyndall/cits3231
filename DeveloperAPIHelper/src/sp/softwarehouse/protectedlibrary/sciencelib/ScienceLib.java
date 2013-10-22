@@ -1,5 +1,6 @@
 package sp.softwarehouse.protectedlibrary.sciencelib;
 
+
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
 import sp.softwarehouse.protectedlibrary.Exceptions.UnsuccessfulLinkingException;

@@ -1,5 +1,6 @@
 package sp.softwarehouse.protectedlibrary.sciencelib;
 
+
 import sp.softwarehouse.protectedlibrary.ProtectedLibrary;
 
 /**

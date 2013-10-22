@@ -1,8 +1,11 @@
 package sp.softwarehouse.protectedlibrary.enterpriselib;
 
+
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
 import sp.softwarehouse.protectedlibrary.Exceptions.UnsuccessfulLinkingException;
+import sp.softwarehouse.protectedlibrary.enterpriselib.FakeEnterpriseLib;
+import sp.softwarehouse.protectedlibrary.enterpriselib.IEnterpriseLib;
 import sp.softwarehouse.protectedlibrary.RealLibLinker;
 
 

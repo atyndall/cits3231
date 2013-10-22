@@ -1,5 +1,8 @@
 package sp.softwarehouse.protectedlibrary.sciencelib;
 
+
+import sp.softwarehouse.protectedlibrary.sciencelib.IScienceLib;
+
 /**
  * A non-real version of the API that the developer can use to test their code.
  */

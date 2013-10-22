@@ -1,5 +1,6 @@
 package sp.softwarehouse.protectedlibrary.enterpriselib;
 
+
 import sp.softwarehouse.protectedlibrary.ProtectedLibrary;
 
 /**

@@ -1,10 +1,17 @@
 package sp.developer;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
+import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 import sp.support.DeveloperCommandLineParser;
+import sp.support.LicenseFilter;
 import sp.support.RunOptions;
 import sp.common.LinkingRequest;
 import sp.common.Node;
@@ -65,7 +72,19 @@ public class Developer extends Node{
 	 * Encrypts and sends a request for the LinkBroker for the external libraries
 	 */
 	public void sendRequestForExternalLibraries() {
-		//TODO: Write code to send to Link Broker
+//		List<File> licsPath = createRequestFrom();// TODO: What is this??
+//		
+//		
+//
+//		// we check to see if the request was successful, if so, we know the licenses we submitted have been used
+//		// thus we rename them
+//		for (File lic : licsPath) {
+//			File toName = new File(lic.getParentFile() + File.separator + lic.getName() + ".used");
+//			
+//			if (toName.exists()) throw new RuntimeException("File exists, can't rename");
+//			lic.renameTo(toName);
+//			
+//		}
 	}
 
 	
@@ -79,10 +98,31 @@ public class Developer extends Node{
 		log("Error: " + error);
 	}
 	
-	private void createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
+	private List<File> createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
+		List<File> licsPath = new ArrayList<File>(); // we need to keep track of which licenses we use, because we must delete them afterwards
+		
 		for(String softwareHouse : libraries.keySet()){
 			LinkingRequest linkingRequest = new LinkingRequest();
-			linkingRequest.addLibraries(libraries.get(softwareHouse)); // TODO: add licenses
+			
+			int nlibs = libraries.get(softwareHouse).size();
+
+			List<DeveloperLicense> lics = new ArrayList<DeveloperLicense>(nlibs);
+			
+			File f = new File(options.get("licDir"));
+			File[] licenses = f.listFiles(new LicenseFilter());
+			
+			// We get as many licenses as we need from the license directory
+			for (int i = 0; i < nlibs; i++) {
+				try {
+					lics.add(DeveloperLicense.fromStream(new FileInputStream(licenses[i].getAbsolutePath())));
+					licsPath.add(licenses[i]);
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+					return null;
+				}
+			}
+			
+			linkingRequest.addLibraries(libraries.get(softwareHouse), lics);
 			
 			SoftwareHouseRequest request = null;
 			
@@ -97,7 +137,10 @@ public class Developer extends Node{
 			}
 			
 			softwareHouseRequests.put(softwareHouse, request);
+			
 		}
+		
+		return licsPath;
 	}
 
 	private void setOptions(HashMap<String, String> customOptions) {

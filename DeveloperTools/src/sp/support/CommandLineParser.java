@@ -1,5 +1,6 @@
 package sp.support;
 
+import java.io.File;
 import java.util.HashMap;
 
 import sp.common.LoggedItem;
@@ -40,6 +41,32 @@ public abstract class CommandLineParser extends LoggedItem {
 			return errorPrefix + ": " + error;
 		}
 	}
+	
+	public class DirParser extends ArgumentParser {
+
+		@Override
+		public boolean parse(String parameter) {	
+			recordParsedAtLeastOneArgument();
+			
+			File f = new File(parameter);
+			
+			if(f != null && f.isDirectory()){
+				recordParameter(f.getAbsolutePath());
+				return true;
+			} else {
+				error = "Not a directory";
+				return false;
+			}
+			
+		}
+		
+		public DirParser(HashMap<String,String> options, String parameterName, 
+				String errorPrefix){
+			super(options, parameterName, errorPrefix);
+		}
+
+	}
+	
 
 	public class FileParser extends ArgumentParser {
 		private String[] acceptableFileTypes;

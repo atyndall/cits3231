@@ -57,6 +57,8 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 		ArgumentParser argumentParser = new FileParser(options, "jarFile", "Jar File", 
 				new String[]{".jar"});
 		
+		argumentParser = new DirParser(options, "licDir", "Licensing directory");
+		
 		if(args.length > 0){
 			
 			for(int i=0; i<args.length; i++){
@@ -122,9 +124,10 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 		emptyLine();
 		display("Usage:");
 		emptyLine();
-		display("Developer JarFilePath [options] -libs LibraryNames ");
+		display("Developer JarFilePath LicFilePath [options] -libs LibraryNames ");
 		emptyLine();
-		display("	JarFilepath		- Directory path to the .jar file to link to the remote libraries");			
+		display("	JarFilepath		- Directory path to the .jar file to link to the remote libraries");	
+		display("	LicFilepath		- Directory path to folder containing current licenses");	
 		display("	Librarynames	- Space separated list of library names in the format SoftwareHouse:Library");	
 		emptyLine();
 		display("Options:");
