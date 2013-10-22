@@ -6,7 +6,7 @@ import java.util.List;
 
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 
-public class LinkingRequest implements Serializable{
+public class LinkingRequest implements Serializable {
 	private static final long serialVersionUID = 2316319439688449010L;
 	
 	/**

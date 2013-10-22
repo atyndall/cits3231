@@ -1,18 +1,27 @@
-package sp.developer;
+package sp.linkbrokers.linktool;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.rmi.ConnectException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 
+import javax.rmi.ssl.SslRMIClientSocketFactory;
+
+import sp.linkbrokers.linkingserver.ILinkingServer;
+import sp.linkbrokers.linktool.support.DeveloperCommandLineParser;
+import sp.linkbrokers.linktool.support.LicenseFilter;
+import sp.linkbrokers.linktool.support.RunOptions;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
-import sp.support.DeveloperCommandLineParser;
-import sp.support.LicenseFilter;
-import sp.support.RunOptions;
 import sp.common.LinkingRequest;
 import sp.common.Node;
 import sp.common.SoftwareHouseRequest;
@@ -33,8 +42,14 @@ import sp.common.SoftwareHouseRequest;
  *  
  * @author Ash Tyndall, Aleck Greenham
  */
-public class Developer extends Node{
+public class DeveloperLinkTool extends Node{
 	static private HashMap<String, String> defaultOptions;
+	
+	static final int linkingPort = 54164;
+	static final String rmiRegistryAddress = "localhost";
+	static final String linkingServerClassName = "LinkingServer";
+	
+	private ILinkingServer linkingSvr;
 	
 	/**
 	 * Contains the location of the .jar file to link external libraries to. This
@@ -54,17 +69,27 @@ public class Developer extends Node{
 	 */
 	public static void main(String[] args) {
 		RunOptions runOptions = new DeveloperCommandLineParser().parseArguments(args);
-		Developer developer = new Developer(runOptions);
+		DeveloperLinkTool developer = new DeveloperLinkTool(runOptions);
+
 		developer.sendRequestForExternalLibraries();
 	}
 	
 	/**
 	 * Initiates a new developer instance
 	 */
-	public Developer(RunOptions runOptions) {
+	public DeveloperLinkTool(RunOptions runOptions) {
 		softwareHouseRequests = new HashMap<String, SoftwareHouseRequest>();
 		
 		setOptions(runOptions.getOptions());
+
+		try {
+			Registry reg = LocateRegistry.getRegistry(rmiRegistryAddress, linkingPort, new SslRMIClientSocketFactory());
+			ILinkingServer linkingSvr = (ILinkingServer) reg.lookup(linkingServerClassName);		
+		} catch (RemoteException | NotBoundException e) {
+            e.printStackTrace();
+            return;
+		}
+		
 		createRequestFrom(runOptions.getLibraries());
 	}
 
@@ -147,6 +172,23 @@ public class Developer extends Node{
 		options = new HashMap<String,String>();
 		options.putAll(getDefaultOptions());
 		options.putAll(customOptions);
+		setSystemOptions(customOptions);
+	}
+	
+	static private void setSystemOptions(HashMap<String, String> customOptions) {
+		for (Entry<String, String> e : customOptions.entrySet()) {
+			switch (e.getKey()) {
+			case "keyStoreFile":
+				System.setProperty("javax.net.ssl.keyStore", e.getValue());
+				System.setProperty("javax.net.ssl.trustStore", e.getValue());
+				break;
+				
+			case "keyStorePassword":
+				System.setProperty("javax.net.ssl.keyStorePassword", e.getValue());
+				System.setProperty("javax.net.ssl.trustStorePassword", e.getValue());
+				break;
+			}
+		}
 	}
 
 	static private HashMap<String, String> getDefaultOptions(){
@@ -157,6 +199,7 @@ public class Developer extends Node{
 			setDefault("keyStoreType", DEFAULT_KEYSTORE_TYPE);
 			setDefault("keyStoreAlias", DEFAULT_KEYSTORE_ALIAS);
 			setDefault("symmetricEncryptionType", DEFAULT_SYMETRICAL_ENCRYPTION);
+			setSystemOptions(defaultOptions);
 		}
 		
 		return defaultOptions;

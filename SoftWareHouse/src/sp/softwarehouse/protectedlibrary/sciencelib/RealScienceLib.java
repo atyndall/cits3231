@@ -3,7 +3,7 @@ package sp.softwarehouse.protectedlibrary.sciencelib;
 /**
  * A non-real version of the API that the developer can use to test their code.
  */
-class RealScienceLib implements IScienceLib {
+public class RealScienceLib implements IScienceLib {
 	
 	@Override
 	public int getScience() {

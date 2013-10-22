@@ -1,16 +1,20 @@
 package sp.softwarehouse.protectedlibrary;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class DeveloperLicense {
+public class DeveloperLicense implements Serializable {
 
+	private static final long serialVersionUID = -865416936996786148L;
 	private String lic;
 	private String developerName;
 	private String identifier;
@@ -34,15 +38,27 @@ public class DeveloperLicense {
 		return developerName;
 	}
 	
-	private static String convertStreamToString(InputStream is) {
-	    Scanner s = new Scanner(is).useDelimiter("\\A"); 
-	    return s.hasNext() ? s.next() : "";
+	private static String convertFileToString(File file) throws IOException {
+		InputStream in = new FileInputStream(file);
+		byte[] b  = new byte[(int)file.length()];
+		int len = b.length;
+		int total = 0;
+
+		while (total < len) {
+		  int result = in.read(b, total, len - total);
+		  if (result == -1) {
+		    break;
+		  }
+		  total += result;
+		}
+
+		return new String(b, "UTF-8");
 	}
 	
-	public static DeveloperLicense fromStream(InputStream f) {
-		String lic = convertStreamToString(f);
-		String[] licParts = lic.split("|");
-		return new DeveloperLicense(licParts[0], licParts[1], licParts[2]);
+	public static DeveloperLicense fromFile(File f) throws IOException {
+		String lic = convertFileToString(f);
+		String[] licParts = lic.split("\\|");
+		return new DeveloperLicense(licParts[0], licParts[1], licParts[2].trim());
 	}
 	
 	public void toFile(File f) throws IOException {

@@ -1,6 +1,7 @@
 package sp.linkbrokers.linkingserver;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -19,6 +20,9 @@ import java.util.Map.Entry;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import javax.rmi.ssl.*;
 
@@ -34,7 +38,7 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
 	
 	private ILibProvidingServer libProvidingServer;
 	
-	protected LinkingServer() throws RemoteException {
+	public LinkingServer() throws RemoteException {
 		super(linkingPort, new SslRMIClientSocketFactory(), new SslRMIServerSocketFactory(null, null, true));
 		
     	Registry libProviderReg = LocateRegistry.getRegistry("localhost", libProviderPort, new SslRMIClientSocketFactory());
@@ -82,17 +86,17 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
         File tempFile = initialiseJarTmpFile(jarFile);
 	    byte[] buf = new byte[1024];
 
-	    JarInputStream zin = new JarInputStream(new FileInputStream(tempFile));
-	    JarOutputStream out = new JarOutputStream(new FileOutputStream(jarFile));
+	    ZipInputStream zin = new ZipInputStream(new FileInputStream(tempFile));
+	    ZipOutputStream out = new ZipOutputStream(new FileOutputStream(jarFile));
 
-	    JarEntry entry = zin.getNextJarEntry();
+	    ZipEntry entry = zin.getNextEntry();
 	    
 	    while (entry != null) {
 	    	String entryName = entry.getName();
 	    	
 	        if (!isFileInDatabase(entryName,files)) {
 	            // Add ZIP entry to output stream.
-	            out.putNextEntry(new JarEntry(entryName));
+	            out.putNextEntry(new ZipEntry(entryName));
 	            // Transfer bytes from the ZIP file to the output file
 	            
 	            int len;
@@ -102,7 +106,7 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
 	            }
 	        }
 	        
-	        entry = zin.getNextJarEntry();
+	        entry = zin.getNextEntry();
 	    }
 	    
 	    // Close the streams        
@@ -112,7 +116,7 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
 	    for (Entry<String, File> e : files.entrySet()) {
 	        InputStream in = new FileInputStream(e.getValue());
 	        // Add ZIP entry to output stream.
-	        out.putNextEntry(new JarEntry(e.getKey()));
+	        out.putNextEntry(new ZipEntry(e.getKey()));
 	        // Transfer bytes from the file to the ZIP file
 	        int len;
 	        while ((len = in.read(buf)) > 0) {
@@ -132,7 +136,7 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
          * Create a temp file, delete it so existing jar file can be renamed to
          * the current temp file
          */
-	    File tempFile = File.createTempFile(jarFile.getName(), null);
+	    File tempFile = File.createTempFile("link", ".jar");
 	    tempFile.delete();
 
 	    if (!jarFile.renameTo(tempFile))
@@ -150,43 +154,43 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
         return false;
 	}
 	
-	public JarInputStream performLink(SoftwareHouseRequest req, JarInputStream inJar) {
+	public byte[] performLink(SoftwareHouseRequest req, byte[] inJarByte) {
 		// we read the jar file to a location on the disk
 		try {
 			File outJarF = File.createTempFile("link", ".jar");
 			FileOutputStream outJar = new FileOutputStream(outJarF);
-			int read = 0;
-			byte[] bytes = new byte[1024];
-			while ((read = inJar.read(bytes)) != -1) {
-				outJar.write(bytes, 0, read);
-			}
+			outJar.write(inJarByte);
+			outJar.close();
 			
-			Map<String, InputStream> clss = libProvidingServer.getClassesToLink(req);
+			Map<String, byte[]> clss = libProvidingServer.getClassesToLink(req);
 			Map<String, File> oclss = new HashMap<String, File>();
 			
 			// convert inputstreams to tmp files
-			for(Entry<String, InputStream> e : clss.entrySet()) {
+			for(Entry<String, byte[]> e : clss.entrySet()) {
 				File tmp = File.createTempFile("link", ".class");
-				
-				int read2 = 0;
-				byte[] bytes2 = new byte[1024];
-				while ((read2 = e.getValue().read(bytes2)) != -1) {
-					outJar.write(bytes, 0, read2);
-				}
-				
+				FileOutputStream fos = new FileOutputStream(tmp);
+				fos.write(e.getValue());				
 				oclss.put(e.getKey(), tmp);
 			}
 			
 			addFilesToExistingZip(outJarF, oclss);
 			
-			return new JarInputStream(new FileInputStream(outJarF));
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			FileInputStream outJarIn = new FileInputStream(outJarF);
+			int read = 0;
+			byte[] bytes = new byte[1024];
+			while ((read = outJarIn.read(bytes)) != -1) {
+				bos.write(bytes, 0, read);
+			}
+			outJarIn.close();
+			
+			return bos.toByteArray();			
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
 		
 	}
-	
 
 	
 }

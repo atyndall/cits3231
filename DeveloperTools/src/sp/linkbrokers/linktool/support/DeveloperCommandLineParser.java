@@ -1,4 +1,4 @@
-package sp.support;
+package sp.linkbrokers.linktool.support;
 
 import java.util.ArrayList;
 import java.util.HashMap;

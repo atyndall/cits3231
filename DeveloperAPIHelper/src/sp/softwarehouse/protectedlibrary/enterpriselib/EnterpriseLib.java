@@ -1,8 +1,5 @@
 package sp.softwarehouse.protectedlibrary.enterpriselib;
 
-
-import sp.softwarehouse.protectedlibrary.DeveloperLicense;
-import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
 import sp.softwarehouse.protectedlibrary.Exceptions.UnsuccessfulLinkingException;
 import sp.softwarehouse.protectedlibrary.enterpriselib.FakeEnterpriseLib;
 import sp.softwarehouse.protectedlibrary.enterpriselib.IEnterpriseLib;
@@ -18,8 +15,8 @@ public class EnterpriseLib implements IEnterpriseLib {
 
 	private IEnterpriseLib actualAPI;
 	
-	public EnterpriseLib(DeveloperLicense lic) throws UnsuccessfulLinkingException, InvalidLicenseException  {
-		this.actualAPI = RealLibLinker.getRealLib(IEnterpriseLib.class, "sp.softwarehouse.protectedlibrary.enterpriselib.RealEnterpriseLib", lic);
+	public EnterpriseLib() throws UnsuccessfulLinkingException  {
+		this.actualAPI = RealLibLinker.<IEnterpriseLib>getRealLib("sp.softwarehouse.protectedlibrary.enterpriselib.RealEnterpriseLib");
 	}
 	
 	public EnterpriseLib(boolean debugMode) {

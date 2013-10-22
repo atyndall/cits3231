@@ -1,4 +1,4 @@
-package sp.support;
+package sp.linkbrokers.linktool.support;
 
 import java.io.File;
 import java.io.FilenameFilter;

@@ -1,12 +1,14 @@
 package sp.softwarehouse.libprovidingserver;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -17,7 +19,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +32,7 @@ import sp.common.SoftwareHouseRequest;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
 import sp.softwarehouse.protectedlibrary.LicenseManager;
+import sp.softwarehouse.protectedlibrary.ProtectedLibrary;
 import sp.tests.LicensingTest;
 
 public class LibProvidingServer extends UnicastRemoteObject implements ILibProvidingServer {
@@ -43,20 +45,23 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 			"EnterpriseLib"
 	);
 	
-	private static final List<String> providedLibs = Arrays.asList(
-			"sp/softwarehouse/protectedlibrary/sciencelib/RealScienceLib.class", 
-			"sp/softwarehouse/protectedlibrary/enterpriselib/RealEnterpriseLib.class"
+	private static final List<Class<? extends ProtectedLibrary>> providedLibClasses = Arrays.asList(
+			sp.softwarehouse.protectedlibrary.sciencelib.RealScienceLib.class,
+			sp.softwarehouse.protectedlibrary.enterpriselib.RealEnterpriseLib.class
 	);
+			
 	
 	private KeyStore.PrivateKeyEntry key;
 	private LicenseManager lm;
-	private Map<String, String> mapShortToLong;
+	private Map<String, Class<? extends ProtectedLibrary>> mapShortToClass;
 	
 	protected LibProvidingServer() throws RemoteException {
 		super(libProvidingPort, new SslRMIClientSocketFactory(), new SslRMIServerSocketFactory(null, null, true));
 		
-		for (int i = 0; i < providedLibs.size(); i++) {
-			mapShortToLong.put(providedLibsShort.get(i), providedLibs.get(i));
+		mapShortToClass = new HashMap<String, Class<? extends ProtectedLibrary>>();
+		
+		for (int i = 0; i < providedLibsShort.size(); i++) {
+			mapShortToClass.put(providedLibsShort.get(i), providedLibClasses.get(i));
 		}
 		
 		KeyStore ks;
@@ -100,11 +105,19 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 	public static void main(String args[]) {
 		URL trustDir = LibProvidingServer.class.getResource("/truststore-softwarehouse.jks");
 		
-		System.out.println("Truststore: " + trustDir.getPath());
+		String trustPath;
+		try {
+			trustPath = URLDecoder.decode(trustDir.getPath(), "UTF-8");
+		} catch (UnsupportedEncodingException e1) {
+			e1.printStackTrace();
+			return;
+		}
 		
-		System.setProperty("javax.net.ssl.keyStore", trustDir.getPath());
+		System.out.println("Truststore: " + trustPath);
+		
+		System.setProperty("javax.net.ssl.keyStore", trustPath);
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
-		System.setProperty("javax.net.ssl.trustStore", trustDir.getPath());
+		System.setProperty("javax.net.ssl.trustStore", trustPath);
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
 		
 	    try {
@@ -118,7 +131,7 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 			reg.bind(addr, obj);
 			
 			System.out.println("The RMI registry is currently running on port " + libProvidingPort);
-			System.out.println("Clients can bind to the linking server with '"+addr+"'");
+			System.out.println("Clients can bind to the lib providing server with '"+addr+"'");
 		
         } catch (Exception e) {
         	System.out.println("LibProvidingServer err: " + e.getMessage());
@@ -126,12 +139,30 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
         }
 	}
 	
-	
-	private InputStream getClassStream(String className) {
-		return LibProvidingServer.class.getResourceAsStream("classfiles/" + className + ".linkin");
+	private String getPathName(String className) {
+		return mapShortToClass.get(className).getCanonicalName().replaceAll("\\.", "/") + ".class"; 
 	}
 	
-	public Map<String, InputStream> getClassesToLink(SoftwareHouseRequest req)
+	
+	private byte[] getClassBytes(String className) throws IOException {
+		InputStream is = LibProvidingServer.class.getResourceAsStream("/" + getPathName(className));
+		
+		if (is == null) {
+			throw new FileNotFoundException();
+		} else {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			int read = 0;
+			byte[] bytes = new byte[1024];
+			while ((read = is.read(bytes)) != -1) {
+				bos.write(bytes, 0, read);
+			}
+			is.close();
+			
+			return bos.toByteArray();
+		}
+	}
+	
+	public Map<String, byte[]> getClassesToLink(SoftwareHouseRequest req)
 			throws InvalidLicenseException, Exception {
 		
 		LinkingRequest lreq = req.getRequest(key.getPrivateKey(), "AES");
@@ -139,18 +170,19 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 		List<String> libs = lreq.getLibraryList();
 		List<DeveloperLicense> licenses = lreq.getLicenses();
 		
-		Map<String, InputStream> outm = new HashMap<String, InputStream>();
+		Map<String, byte[]> outm = new HashMap<String, byte[]>();
 		
 		for (int i = 0; i < libs.size(); i++) {
-			if (!providedLibs.contains(libs.get(i))) throw new Exception("Non-existant lib");
+			if (!providedLibsShort.contains(libs.get(i))) throw new Exception("Non-existant lib");
 			
 			if (lm.validLicense(licenses.get(i))) {
-				lm.consumeLicense(licenses.get(i));
+				//lm.consumeLicense(licenses.get(i)); TODO add back
 			} else {
 				throw new Exception("Invalid licenses");
 			}
 			
-			outm.put(mapShortToLong.get(libs.get(i)), getClassStream(libs.get(i)));
+			System.out.println("Got request for " + mapShortToClass.get(libs.get(i)));
+			outm.put(getPathName(libs.get(i)), getClassBytes(libs.get(i)));
 		}
 		
 		return outm;

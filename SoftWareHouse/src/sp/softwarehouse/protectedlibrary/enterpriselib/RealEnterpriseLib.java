@@ -5,7 +5,7 @@ package sp.softwarehouse.protectedlibrary.enterpriselib;
  * They must pass their license file to the API and the API will verify it.
  * If the license is invalid, the API throws an exception.
  */
-class RealEnterpriseLib implements IEnterpriseLib {
+public class RealEnterpriseLib implements IEnterpriseLib {
 
 	@Override
 	public int getEnterprise() {

@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -22,7 +23,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-public class SoftwareHouseRequest {
+public class SoftwareHouseRequest implements Serializable {
+	private static final long serialVersionUID = -7527690235425159164L;
 	private static final String signatureAlgorithm = "SHA1withRSA";
 	private byte[] encryptedRequest;
 	private byte[] symmetricEncryptionKey;

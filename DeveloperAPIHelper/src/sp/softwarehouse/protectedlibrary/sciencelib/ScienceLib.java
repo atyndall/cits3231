@@ -1,12 +1,7 @@
 package sp.softwarehouse.protectedlibrary.sciencelib;
 
-
-import sp.softwarehouse.protectedlibrary.DeveloperLicense;
-import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
 import sp.softwarehouse.protectedlibrary.Exceptions.UnsuccessfulLinkingException;
 import sp.softwarehouse.protectedlibrary.RealLibLinker;
-
-
 
 /**
  * API class the developer interfaces with.
@@ -16,8 +11,8 @@ public class ScienceLib implements IScienceLib {
 
 	private IScienceLib actualAPI;
 	
-	public ScienceLib(DeveloperLicense lic) throws UnsuccessfulLinkingException, InvalidLicenseException  {
-		this.actualAPI = RealLibLinker.getRealLib(IScienceLib.class, "sp.softwarehouse.protectedlibrary.enterpriselib.RealScienceLib", lic);
+	public ScienceLib() throws UnsuccessfulLinkingException  {
+		this.actualAPI = RealLibLinker.<IScienceLib>getRealLib("sp.softwarehouse.protectedlibrary.sciencelib.RealScienceLib");
 	}
 	
 	public ScienceLib(boolean debugMode) {
