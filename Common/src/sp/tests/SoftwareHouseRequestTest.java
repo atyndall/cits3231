@@ -2,18 +2,21 @@ package sp.tests;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import sp.common.LinkingRequest;
 import sp.common.SoftwareHouseRequest;
+import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 
 public class SoftwareHouseRequestTest extends TestHelper {
 	
@@ -38,6 +41,9 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance(encryption);
 		KeyPair pair = keyGen.generateKeyPair();
 		
+		DeveloperLicense validLicense = null;
+		List<DeveloperLicense> validLicenses = null;
+		
 		privateKey = pair.getPrivate();
 		publicKey = pair.getPublic();
 		
@@ -46,11 +52,20 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		differentPrivateKey = pair.getPrivate();
 		differentPublicKey = pair.getPublic();
 		
-		ArrayList<String> libraryList = new ArrayList<String>();
+		List<String> libraryList = new ArrayList<String>();
 		libraryList.add(libraryNames[0]);
 		
+		
+		try {
+			validLicense = DeveloperLicense.createLicense(validLicenseFile);
+			validLicenses = new ArrayList<DeveloperLicense>();
+			validLicenses.add(validLicense);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		linkRequestForSingleLibrary = new LinkingRequest();
-		linkRequestForSingleLibrary.addLibraries(libraryList); // TODO: update to work with new license structure
+		linkRequestForSingleLibrary.addLibraries(libraryList, validLicenses); 
 		
 		linkRequestForMultipleLibraries = new LinkingRequest();
 		emptyLinkingRequest = new LinkingRequest();
@@ -59,7 +74,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 			libraryList.add(libraryNames[i]);
 		}
 		
-		linkRequestForMultipleLibraries.addLibraries(libraryList);
+		linkRequestForMultipleLibraries.addLibraries(libraryList, validLicenses);
 	}
 
 	@Test
@@ -146,8 +161,8 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	
 	
 	private void assertIsNotSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
-		ArrayList<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
-		ArrayList<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
+		List<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
+		List<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		
 		assertEquals(requestLibraryList.size(), originalLibraryList.size());  
 				
@@ -158,8 +173,8 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	}
 
 	private void assertIsSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
-		ArrayList<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
-		ArrayList<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
+		List<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
+		List<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		
 		assertEquals(requestLibraryList.size(), originalLibraryList.size());  
 				

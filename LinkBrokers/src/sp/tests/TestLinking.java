@@ -94,7 +94,7 @@ public class TestLinking {
 		
 		try {
 			LinkingRequest lnk = new LinkingRequest();
-			lnk.add("ScienceLib", DeveloperLicense.fromFile(new File(getResourceAsPath("/developer1-0.lic"))));
+			lnk.add("ScienceLib", DeveloperLicense.createLicense(new File(getResourceAsPath("/developer1-0.lic"))));
 			SoftwareHouseRequest req = new SoftwareHouseRequest(lnk, key.getTrustedCertificate().getPublicKey(), "AES");
 			
 			LinkingServer ls = new LinkingServer();

@@ -124,7 +124,10 @@ public class DeveloperLinkTool extends Node{
 	}
 	
 	private List<File> createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
-		List<File> licsPath = new ArrayList<File>(); // we need to keep track of which licenses we use, because we must delete them afterwards
+		/**
+		 * Contains the licenses used so that they can be deleted later
+		 */
+		List<File> licsPath = new ArrayList<File>();
 		
 		for(String softwareHouse : libraries.keySet()){
 			LinkingRequest linkingRequest = new LinkingRequest();
