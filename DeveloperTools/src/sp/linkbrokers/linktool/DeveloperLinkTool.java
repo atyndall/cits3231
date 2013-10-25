@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -25,6 +26,7 @@ import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 import sp.common.LinkingRequest;
 import sp.common.Node;
 import sp.common.SoftwareHouseRequest;
+import sp.exceptions.InvalidDeveloperLicenseFileException;
 
 /**
  * Program to replace .class files in a .jar compiled archive with those supplied
@@ -45,8 +47,8 @@ import sp.common.SoftwareHouseRequest;
 public class DeveloperLinkTool extends Node{
 	static private HashMap<String, String> defaultOptions;
 	
-	static final int linkingPort = 54164;
-	static final String rmiRegistryAddress = "localhost";
+	static final int DEFAULT_LINKING_PORT = 54164;
+	static final String DEFAULT_RMI_LINKING_ADDRESS = "localhost";
 	static final String linkingServerClassName = "LinkingServer";
 	
 	private ILinkingServer linkingSvr;
@@ -81,16 +83,17 @@ public class DeveloperLinkTool extends Node{
 		softwareHouseRequests = new HashMap<String, SoftwareHouseRequest>();
 		
 		setOptions(runOptions.getOptions());
+		createRequestFrom(runOptions.getLibraries());
 
 		try {
-			Registry reg = LocateRegistry.getRegistry(rmiRegistryAddress, linkingPort, new SslRMIClientSocketFactory());
+			Registry reg = LocateRegistry.getRegistry(linkBrokerAddress(), linkBrokerPort(), new SslRMIClientSocketFactory());
 			ILinkingServer linkingSvr = (ILinkingServer) reg.lookup(linkingServerClassName);		
 		} catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
             return;
 		}
 		
-		createRequestFrom(runOptions.getLibraries());
+		
 	}
 
 	/**
@@ -123,34 +126,45 @@ public class DeveloperLinkTool extends Node{
 		log("Error: " + error);
 	}
 	
+	private int linkBrokerPort(){
+		return Integer.parseInt(options.get("lbport"));
+	}
+	
+	private String linkBrokerAddress(){
+		return options.get("lbaddress");
+	}
+	
 	private List<File> createRequestFrom(HashMap<String, ArrayList<String>> libraries) {
 		/**
 		 * Contains the licenses used so that they can be deleted later
 		 */
-		List<File> licsPath = new ArrayList<File>();
+		List<File> licensesToUse = new ArrayList<File>();
 		
 		for(String softwareHouse : libraries.keySet()){
 			LinkingRequest linkingRequest = new LinkingRequest();
+			int numberOfLibraries = libraries.get(softwareHouse).size();
+			List<DeveloperLicense> licences = new ArrayList<DeveloperLicense>(numberOfLibraries);
 			
-			int nlibs = libraries.get(softwareHouse).size();
-
-			List<DeveloperLicense> lics = new ArrayList<DeveloperLicense>(nlibs);
-			
-			File f = new File(options.get("licDir"));
-			File[] licenses = f.listFiles(new LicenseFilter());
+			File licenseDir = new File(options.get("licDir"));
+			File[] licenseFiles = licenseDir.listFiles(new LicenseFilter());
 			
 			// We get as many licenses as we need from the license directory
-			for (int i = 0; i < nlibs; i++) {
+			for (int i = 0; i < numberOfLibraries; i++) {
+				File licenseFileInFocus = licenseFiles[i];
+				
 				try {
-					lics.add(DeveloperLicense.fromStream(new FileInputStream(licenses[i].getAbsolutePath())));
-					licsPath.add(licenses[i]);
+					licences.add(DeveloperLicense.createLicense(licenseFileInFocus));
+					licensesToUse.add(licenseFileInFocus);
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
-					return null;
+				} catch (InvalidDeveloperLicenseFileException e) {
+					logErrorAndExit(e.getMessage());
+				} catch (IOException e) {
+					logErrorAndExit("Unable to access license file '"+licenseFileInFocus.getName()+"'");
 				}
 			}
 			
-			linkingRequest.addLibraries(libraries.get(softwareHouse), lics);
+			linkingRequest.addLibraries(libraries.get(softwareHouse), licences);
 			
 			SoftwareHouseRequest request = null;
 			
@@ -168,7 +182,7 @@ public class DeveloperLinkTool extends Node{
 			
 		}
 		
-		return licsPath;
+		return licensesToUse;
 	}
 
 	private void setOptions(HashMap<String, String> customOptions) {
@@ -202,6 +216,8 @@ public class DeveloperLinkTool extends Node{
 			setDefault("keyStoreType", DEFAULT_KEYSTORE_TYPE);
 			setDefault("keyStoreAlias", DEFAULT_KEYSTORE_ALIAS);
 			setDefault("symmetricEncryptionType", DEFAULT_SYMETRICAL_ENCRYPTION);
+			setDefault("lbaddress", DEFAULT_RMI_LINKING_ADDRESS);
+			setDefault("lbport", Integer.toString(DEFAULT_LINKING_PORT));
 			setSystemOptions(defaultOptions);
 		}
 		

@@ -8,6 +8,7 @@ import java.io.IOException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import sp.exceptions.InvalidDeveloperLicenseFileException;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 
 public class DeveloperLicenseTest extends TestHelper{
@@ -19,15 +20,22 @@ public class DeveloperLicenseTest extends TestHelper{
 	
 	@Test
 	public void testCreatesCorrectLicenseFromValidFile() throws IOException {
-		DeveloperLicense license = DeveloperLicense.createLicense(validLicenseFile);
+		DeveloperLicense license;
 		
-		assertEquals(validDeveloperName, license.getDeveloperName());
-		assertEquals(validIdentifier, license.getIdentifier());
-		assertEquals(validEncryptedLicense, license.getLicense());
+		try {
+			license = DeveloperLicense.createLicense(validLicenseFile);
+			
+			assertEquals(validDeveloperName, license.getDeveloperName());
+			assertEquals(validIdentifier, license.getIdentifier());
+			assertEquals(validEncryptedLicense, license.getLicense());
+		} catch (InvalidDeveloperLicenseFileException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
-	@Test(expected=IllegalArgumentException.class)
-	public void testRaisesExceptionForEmptyLicenseFile(){
+	@Test(expected=InvalidDeveloperLicenseFileException.class)
+	public void testRaisesExceptionForEmptyLicenseFile() throws InvalidDeveloperLicenseFileException{
 		try{
 			File emptyFile = createLicenseFile("","","");
 			DeveloperLicense.createLicense(emptyFile);
@@ -36,8 +44,8 @@ public class DeveloperLicenseTest extends TestHelper{
 		}
 	}
 	
-	@Test(expected=IllegalArgumentException.class)
-	public void testRaisesExceptionForLicenseFileMissingDeveloperName(){
+	@Test(expected=InvalidDeveloperLicenseFileException.class)
+	public void testRaisesExceptionForLicenseFileMissingDeveloperName() throws InvalidDeveloperLicenseFileException{
 		try{
 			File fileMissingDeveloperName = createLicenseFile(validEncryptedLicense,validIdentifier,"");
 			DeveloperLicense.createLicense(fileMissingDeveloperName);

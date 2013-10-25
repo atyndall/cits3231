@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+import sp.exceptions.InvalidDeveloperLicenseFileException;
+
 public class DeveloperLicense implements Serializable {
 
 	private static final long serialVersionUID = -865416936996786148L;
@@ -20,12 +22,12 @@ public class DeveloperLicense implements Serializable {
 	private String identifier;
 	
 	
-	public static DeveloperLicense createLicense(File file) throws IOException {
+	public static DeveloperLicense createLicense(File file) throws InvalidDeveloperLicenseFileException, IOException {
 		String license = fileToString(file);
 		String[] licParts = license.split(DELIMITER);
 		
 		if(licParts.length != 3)
-			throw new IllegalArgumentException("Malformed license: '" + license + "'");
+			throw new InvalidDeveloperLicenseFileException("Malformed license: '" + license + "'");
 		
 		String encryptedLicense = licParts[0];
 		String identifier = licParts[1];

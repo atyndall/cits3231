@@ -88,6 +88,14 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 						argumentParser = new ArgumentParser(options, "symmetricEncryptionType", "Symmetric Encryption Type");
 						break;
 						
+					case "-lbaddress":
+						argumentParser = new ArgumentParser(options, "lbaddress", "Link Broker Address");
+						break;
+					
+					case "-lbport":
+						argumentParser = new ArgumentParser(options, "lbport", "Link Broker Port");
+						break;
+						
 					default:
 						if(args[i].substring(0, 1).equals("-"))
 							logErrorAndExit("Unknown option '" + args[i] + "'");
@@ -137,5 +145,7 @@ public class DeveloperCommandLineParser extends CommandLineParser{
 		display("	-keyStoreType				Filetype of key store; currently ignored and defualts to .jks");
 		display("	-keyStoreAlias				Alias in key store associated with developer's private key");
 		display("	-symmetricEncryptionType 	Type of symmetric encryption to use for linking requests");
+		display("	-lbaddresss					Address Link Broker can be reached on");
+		display("	-lbport 					Port number Link Broker can be reached on");
 	}
 }

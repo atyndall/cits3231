@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import sp.common.LinkingRequest;
 import sp.common.SoftwareHouseRequest;
+import sp.exceptions.InvalidDeveloperLicenseFileException;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 
 public class SoftwareHouseRequestTest extends TestHelper {
@@ -61,6 +62,8 @@ public class SoftwareHouseRequestTest extends TestHelper {
 			validLicenses = new ArrayList<DeveloperLicense>();
 			validLicenses.add(validLicense);
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InvalidDeveloperLicenseFileException e) {
 			e.printStackTrace();
 		}
 		
