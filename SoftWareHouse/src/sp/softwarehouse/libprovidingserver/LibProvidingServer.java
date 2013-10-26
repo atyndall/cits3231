@@ -10,6 +10,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -63,7 +65,7 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 	private LicenseManager lm;
 	private Map<String, Class<? extends ProtectedLibrary>> mapShortToClass;
 	
-	protected LibProvidingServer() throws RemoteException {
+	public LibProvidingServer() throws RemoteException {
 		super(libProvidingPort, new SslRMIClientSocketFactory(), new SslRMIServerSocketFactory(null, null, true));
 		
 		mapShortToClass = new HashMap<String, Class<? extends ProtectedLibrary>>();
@@ -152,7 +154,10 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 	}
 	
 	
-	private byte[] getClassBytes(String className, Map<String, byte[]> checksums) throws IOException {
+	/*
+	 * IMPORTANT: YOU MUST ENSURE THAT THE .JAVA SOURCE FILES ARE COMPILED INTO THE SOFTWAREHOUSE JAR OR THIS WILL NOT WORK
+	 */
+	public byte[] getClassBytes(String className, Map<String, byte[]> checksums) throws IOException {
 		StringBuilder spaths = new StringBuilder();
 		StringBuilder schecksums = new StringBuilder();
 		
@@ -165,8 +170,8 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 		spaths.deleteCharAt(spaths.length() - 1);
 		schecksums.deleteCharAt(schecksums.length() - 1);
 		
-		
-		InputStream is = LibProvidingServer.class.getResourceAsStream("/" + getPathName(className));
+		String pathName = getPathName(className);
+		InputStream is = LibProvidingServer.class.getResourceAsStream("/" + pathName);
 		
 		if (is == null) throw new FileNotFoundException();
 		
@@ -184,16 +189,24 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 		src = src.replaceFirst("\"#PATHS#\"", spaths.toString());
 		src = src.replaceFirst("\"#SUMS#\"", schecksums.toString());
 		
-		File tmpJava = File.createTempFile(className + "-custom", ".java");
-		System.out.println(tmpJava.getAbsolutePath());
-		FileOutputStream fos = new FileOutputStream(tmpJava.getAbsolutePath());
+		Path tempDir = Files.createTempDirectory("customcompile");
+		System.out.println("Compile temp dir; " + tempDir.toAbsolutePath());
+		String compilePath = tempDir.toAbsolutePath() + File.separator + "Real" + className;
+		FileOutputStream fos = new FileOutputStream(compilePath + ".java");
 		fos.write(src.getBytes("UTF-8"));
 		fos.close();
 		
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		compiler.run(null, null, null, tmpJava.getPath());
+		if (compiler == null) throw new RuntimeException("Can't find Java compiler; make sure you're linking against the JDK, and not the JRE.");
 		
-		FileInputStream compis = new FileInputStream(tmpJava.getParent() + File.separator + tmpJava.getName().replace("\\.java", ".class"));
+		String jarFileLocation = URLDecoder.decode(LibProvidingServer.class.getResource("/softwarehouse-common.jar").getPath().toString(), "UTF-8"); // TODO: This needs to be determined dynamically, because if we're already in a jar, it won't work
+        String compilerParams = "-classpath \"" + jarFileLocation + "\" \"" + compilePath + ".java\"";
+        System.out.println("Running compiler with; " + compilerParams);
+		if (compiler.run(null, null, null, "-classpath", jarFileLocation, compilePath + ".java") != 0) {
+			throw new RuntimeException("The compile has failed. We should abort more gracefully.");
+		}
+		
+		FileInputStream compis = new FileInputStream(compilePath + ".class");
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		int read = 0;
 		byte[] bytes = new byte[1024];
