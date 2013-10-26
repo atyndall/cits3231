@@ -7,12 +7,12 @@ import sp.softwarehouse.protectedlibrary.RealLibLinker;
  * API class the developer interfaces with.
  * Uses Java reflection to prevent compile-time errors because the Real API is absent.
  */
-public class ScienceLib implements IScienceLib {
+public class ScienceLib extends AScienceLib {
 
-	private IScienceLib actualAPI;
+	private AScienceLib actualAPI;
 	
 	public ScienceLib() throws UnsuccessfulLinkingException  {
-		this.actualAPI = RealLibLinker.<IScienceLib>getRealLib("sp.softwarehouse.protectedlibrary.sciencelib.RealScienceLib");
+		this.actualAPI = RealLibLinker.<AScienceLib>getRealLib("sp.softwarehouse.protectedlibrary.sciencelib.RealScienceLib");
 	}
 	
 	public ScienceLib(boolean debugMode) {

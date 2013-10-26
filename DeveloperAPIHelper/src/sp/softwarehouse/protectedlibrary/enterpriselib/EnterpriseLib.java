@@ -2,7 +2,7 @@ package sp.softwarehouse.protectedlibrary.enterpriselib;
 
 import sp.softwarehouse.protectedlibrary.Exceptions.UnsuccessfulLinkingException;
 import sp.softwarehouse.protectedlibrary.enterpriselib.FakeEnterpriseLib;
-import sp.softwarehouse.protectedlibrary.enterpriselib.IEnterpriseLib;
+import sp.softwarehouse.protectedlibrary.enterpriselib.AEnterpriseLib;
 import sp.softwarehouse.protectedlibrary.RealLibLinker;
 
 
@@ -11,12 +11,12 @@ import sp.softwarehouse.protectedlibrary.RealLibLinker;
  * API class the developer interfaces with.
  * Uses Java reflection to prevent compile-time errors because the Real API is absent.
  */
-public class EnterpriseLib implements IEnterpriseLib {
+public class EnterpriseLib extends AEnterpriseLib {
 
-	private IEnterpriseLib actualAPI;
+	private AEnterpriseLib actualAPI;
 	
 	public EnterpriseLib() throws UnsuccessfulLinkingException  {
-		this.actualAPI = RealLibLinker.<IEnterpriseLib>getRealLib("sp.softwarehouse.protectedlibrary.enterpriselib.RealEnterpriseLib");
+		this.actualAPI = RealLibLinker.<AEnterpriseLib>getRealLib("sp.softwarehouse.protectedlibrary.enterpriselib.RealEnterpriseLib");
 	}
 	
 	public EnterpriseLib(boolean debugMode) {

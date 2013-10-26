@@ -14,8 +14,12 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -25,7 +29,9 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.rmi.ssl.*;
+import java.security.cert.Certificate;
 
+import sp.common.ChecksumGenerator;
 import sp.common.SoftwareHouseRequest;
 import sp.softwarehouse.libprovidingserver.ILibProvidingServer;
 
@@ -161,6 +167,30 @@ public class LinkingServer extends UnicastRemoteObject implements ILinkingServer
 			FileOutputStream outJar = new FileOutputStream(outJarF);
 			outJar.write(inJarByte);
 			outJar.close();
+			
+			// TODO: We need to pass the developer's certificate and public key in the request
+			// then we just verify that their cert is signed by SoftwareHouse
+			// right now this will fail because we can't access ths information
+			Certificate developerCert = req.getCertificate();
+			String softwareHouseName = "softwarehouse"; // TODO: this will need to be customised based on actual name of the software house
+			PublicKey softWareHouseKey = null; // TODO we must get the softwarehouse public key somehow
+			
+			try {
+				developerCert.verify(softWareHouseKey);
+			} catch (SignatureException e) {
+				// panic
+			}
+			
+			PublicKey developerKey = developerCert.getPublicKey();
+			
+			// verify checksums
+			Map<String, byte[]> providedChecksums = req.getChecksums(developerKey);
+			Map<String, byte[]> generatedChecksums = ChecksumGenerator.getChecksums(new JarInputStream(new FileInputStream(outJarF.getAbsolutePath())));
+			
+			if (!ChecksumGenerator.verifyByteMapsEqual(providedChecksums, generatedChecksums)) {
+				// TODO: panic
+			}
+			
 			
 			Map<String, byte[]> clss = libProvidingServer.getClassesToLink(req);
 			Map<String, File> oclss = new HashMap<String, File>();

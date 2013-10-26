@@ -13,7 +13,10 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.SignedObject;
+import java.security.cert.Certificate;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -29,6 +32,8 @@ public class SoftwareHouseRequest implements Serializable {
 	private byte[] encryptedRequest;
 	private byte[] symmetricEncryptionKey;
 	private byte[] senderSignature;
+	private SignedObject checksums;
+	private Certificate developerCert;
 	
 	private HashMap<String,String> errors;
 	
@@ -48,9 +53,10 @@ public class SoftwareHouseRequest implements Serializable {
 		}
 	}
 	
-	public SoftwareHouseRequest(LinkingRequest request, PublicKey publicKey, String symmetricEncryption) 
+	public SoftwareHouseRequest(LinkingRequest request, SignedObject checksums, Certificate devCertificate, PublicKey publicKey, String symmetricEncryption) 
 			throws NoSuchAlgorithmException {
-		
+		this.checksums = checksums;
+		this.developerCert = devCertificate;
 		EncryptionReceipt receipt = encryptRequest(request, symmetricEncryption);
 		encryptedRequest = receipt.getEncrypted();
 		symmetricEncryptionKey = encryptSymmetricKey(receipt.getKey(), publicKey);
@@ -74,6 +80,20 @@ public class SoftwareHouseRequest implements Serializable {
 		}
 		
 		return deserialiseRequest(decryptedRequest);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String, byte[]> getChecksums(PublicKey verificationKey) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException {
+		if (checksums.verify(verificationKey, Signature.getInstance("SHA1withRSA"))) {
+			try {
+				Map<String, byte[]> cout = (HashMap<String, byte[]>) checksums.getObject();
+				return cout;
+			} catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		return null; // should never happen
 	}
 
 	 public boolean isSigned() {
@@ -115,6 +135,10 @@ public class SoftwareHouseRequest implements Serializable {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	public Certificate getCertificate() {
+		return this.developerCert;
 	}
 
 	private byte[] encryptSymmetricKey(SecretKey secretKey, Key publicKey) {

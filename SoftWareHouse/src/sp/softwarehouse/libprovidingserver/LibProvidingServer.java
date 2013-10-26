@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -17,16 +18,23 @@ import java.security.KeyStore;
 import java.security.KeyStore.ProtectionParameter;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 
+import sp.common.ChecksumGenerator;
 import sp.common.LinkingRequest;
 import sp.common.SoftwareHouseRequest;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
@@ -140,26 +148,61 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 	}
 	
 	private String getPathName(String className) {
-		return mapShortToClass.get(className).getCanonicalName().replaceAll("\\.", "/") + ".class"; 
+		return mapShortToClass.get(className).getCanonicalName().replaceAll("\\.", "/") + ".java"; 
 	}
 	
 	
-	private byte[] getClassBytes(String className) throws IOException {
+	private byte[] getClassBytes(String className, Map<String, byte[]> checksums) throws IOException {
+		StringBuilder spaths = new StringBuilder();
+		StringBuilder schecksums = new StringBuilder();
+		
+		for (Entry<String, String> e : ChecksumGenerator.checksumsToEnc(checksums).entrySet()) {
+			spaths.append("\"" + e.getKey() + "\",");
+			schecksums.append("\"" + e.getValue() + "\",");
+		}
+		
+		// remove last ","
+		spaths.deleteCharAt(spaths.length() - 1);
+		schecksums.deleteCharAt(schecksums.length() - 1);
+		
+		
 		InputStream is = LibProvidingServer.class.getResourceAsStream("/" + getPathName(className));
 		
-		if (is == null) {
-			throw new FileNotFoundException();
-		} else {
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			int read = 0;
-			byte[] bytes = new byte[1024];
-			while ((read = is.read(bytes)) != -1) {
-				bos.write(bytes, 0, read);
-			}
-			is.close();
-			
-			return bos.toByteArray();
+		if (is == null) throw new FileNotFoundException();
+		
+		ByteArrayOutputStream outb = new ByteArrayOutputStream();
+		
+		byte[] buffer = new byte[1024];
+		for (;;) {
+			int rsz = is.read(buffer, 0, buffer.length);
+	        if (rsz < 0)
+	          break;
+	        outb.write(buffer, 0, rsz);
 		}
+		
+		String src = new String(outb.toByteArray(), "UTF-8");
+		src = src.replaceFirst("\"#PATHS#\"", spaths.toString());
+		src = src.replaceFirst("\"#SUMS#\"", schecksums.toString());
+		
+		File tmpJava = File.createTempFile(className + "-custom", ".java");
+		System.out.println(tmpJava.getAbsolutePath());
+		FileOutputStream fos = new FileOutputStream(tmpJava.getAbsolutePath());
+		fos.write(src.getBytes("UTF-8"));
+		fos.close();
+		
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		compiler.run(null, null, null, tmpJava.getPath());
+		
+		FileInputStream compis = new FileInputStream(tmpJava.getParent() + File.separator + tmpJava.getName().replace("\\.java", ".class"));
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		int read = 0;
+		byte[] bytes = new byte[1024];
+		while ((read = compis.read(bytes)) != -1) {
+			bos.write(bytes, 0, read);
+		}
+		compis.close();
+		
+		return bos.toByteArray();
 	}
 	
 	public Map<String, byte[]> getClassesToLink(SoftwareHouseRequest req)
@@ -172,6 +215,21 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 		
 		Map<String, byte[]> outm = new HashMap<String, byte[]>();
 		
+		// TODO: We need to pass the developer's certificate and public key in the request
+		// then we just verify that their cert is signed by SoftwareHouse
+		// right now this will fail because we can't access ths information
+		Certificate developerCert = req.getCertificate();
+		String softwareHouseName = "softwarehouse"; // TODO: this will need to be customised based on actual name of the software house
+		PublicKey softWareHouseKey = null; // TODO we must get the softwarehouse public key somehow
+		
+		try {
+			developerCert.verify(softWareHouseKey);
+		} catch (SignatureException e) {
+			// panic
+		}
+		
+		PublicKey developerKey = developerCert.getPublicKey();
+
 		for (int i = 0; i < libs.size(); i++) {
 			if (!providedLibsShort.contains(libs.get(i))) throw new Exception("Non-existant lib");
 			
@@ -182,7 +240,7 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 			}
 			
 			System.out.println("Got request for " + mapShortToClass.get(libs.get(i)));
-			outm.put(getPathName(libs.get(i)), getClassBytes(libs.get(i)));
+			outm.put(getPathName(libs.get(i)), getClassBytes(libs.get(i), req.getChecksums(developerKey)));
 		}
 		
 		return outm;

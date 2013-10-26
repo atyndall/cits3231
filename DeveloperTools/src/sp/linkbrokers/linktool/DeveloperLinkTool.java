@@ -10,10 +10,12 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignedObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.jar.JarInputStream;
 
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
@@ -22,6 +24,7 @@ import sp.linkbrokers.linktool.support.DeveloperCommandLineParser;
 import sp.linkbrokers.linktool.support.LicenseFilter;
 import sp.linkbrokers.linktool.support.RunOptions;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
+import sp.common.ChecksumGenerator;
 import sp.common.LinkingRequest;
 import sp.common.Node;
 import sp.common.SoftwareHouseRequest;
@@ -151,8 +154,10 @@ public class DeveloperLinkTool extends Node{
 			
 			SoftwareHouseRequest request = null;
 			
+			SignedObject signedChecksums = ChecksumGenerator.getSignedChecksums(getPrivateKey(),  new JarInputStream(new FileInputStream(jarFilePath)));
+			
 			try {
-				request = new SoftwareHouseRequest(linkingRequest, 
+				request = new SoftwareHouseRequest(linkingRequest, signedChecksums, getCertificate(keyStoreAlias()),
 						getPublicKey(softwareHouse), symmetricEncryption());
 				
 				request.sign(getPrivateKey());

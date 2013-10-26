@@ -1,12 +1,12 @@
 package sp.softwarehouse.protectedlibrary.enterpriselib;
 
 
-import sp.softwarehouse.protectedlibrary.enterpriselib.IEnterpriseLib;
+import sp.softwarehouse.protectedlibrary.enterpriselib.AEnterpriseLib;
 
 /**
  * A non-real version of the API that the developer can use to test their code.
  */
-class FakeEnterpriseLib implements IEnterpriseLib {
+class FakeEnterpriseLib extends AEnterpriseLib {
 
 	public FakeEnterpriseLib() {
 		
