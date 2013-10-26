@@ -13,7 +13,6 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.util.HashMap;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -29,8 +28,6 @@ public class SoftwareHouseRequest implements Serializable {
 	private byte[] encryptedRequest;
 	private byte[] symmetricEncryptionKey;
 	private byte[] senderSignature;
-	
-	private HashMap<String,String> errors;
 	
 	private class EncryptionReceipt {
 		SecretKey key;
@@ -219,12 +216,4 @@ public class SoftwareHouseRequest implements Serializable {
 		return request;
 	}
 
-	private String errorMessage(String errorCode) {
-		if(errors == null){
-			errors = new HashMap<String,String>();
-		}
-		
-		return errors.get(errorCode);
-		
-	}
 }

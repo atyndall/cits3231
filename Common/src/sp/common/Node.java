@@ -12,8 +12,13 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
+import java.util.Map.Entry;
+
+import sp.exceptions.RunOptionException;
 
 public abstract class Node extends LoggedItem {
+	protected static HashMap<String, String> defaultOptions;
+	
 	protected HashMap<String, String> options;
 	/**
 	 * The location of the keystore used to contain the public keys of Link Brokers
@@ -68,6 +73,26 @@ public abstract class Node extends LoggedItem {
 		}
 		
 		return port;
+	}
+
+	static protected void setSystemOptions(HashMap<String, String> customOptions) {
+		for (Entry<String, String> e : customOptions.entrySet()) {
+			switch (e.getKey()) {
+			case "keyStoreFile":
+				System.setProperty("javax.net.ssl.keyStore", e.getValue());
+				System.setProperty("javax.net.ssl.trustStore", e.getValue());
+				break;
+				
+			case "keyStorePassword":
+				System.setProperty("javax.net.ssl.keyStorePassword", e.getValue());
+				System.setProperty("javax.net.ssl.trustStorePassword", e.getValue());
+				break;
+			}
+		}
+	}
+
+	static protected void setDefault(String field, String value) {
+		defaultOptions.put(field, value);
 	}
 
 	protected PrivateKey getPrivateKey() {
@@ -136,6 +161,14 @@ public abstract class Node extends LoggedItem {
 	}
 	
 
+	protected int getLinkBrokerPort() {
+		try{
+			return Integer.parseInt(options.get("lbport"));
+		} catch(NumberFormatException e){
+			return -1;
+		}
+	}
+
 	protected char[] keyStorePassword() {
 		return options.get("keyStorePassword").toCharArray();
 	}
@@ -150,5 +183,14 @@ public abstract class Node extends LoggedItem {
 
 	protected String keyStoreType() {
 		return options.get("keyStoreType");
+	}
+	
+	protected abstract HashMap<String,String> getDefaultOptions();
+	
+	protected void setOptions(HashMap<String, String> customOptions){
+		options = new HashMap<String,String>();
+		options.putAll(getDefaultOptions());
+		options.putAll(customOptions);
+		setSystemOptions(customOptions);
 	}
 }
