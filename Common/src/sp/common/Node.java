@@ -54,6 +54,22 @@ public abstract class Node extends LoggedItem {
 		options = new HashMap<String, String>();
 	}
 	
+	public String getSymmetricEncryption(){
+		return options.get("symmetricEncryptionType");
+	}
+	
+	public int getPort(){
+		int port;
+		
+		try{
+			port = Integer.parseInt(options.get("port"));
+		} catch(NumberFormatException e){
+			port = -1;
+		}
+		
+		return port;
+	}
+
 	protected PrivateKey getPrivateKey() {
 		PrivateKey privateKey = null;
 		
@@ -126,10 +142,6 @@ public abstract class Node extends LoggedItem {
 	
 	protected String keyStoreAlias(){
 		return options.get("keyStoreAlias");
-	}
-
-	protected String symmetricEncryption(){
-		return options.get("symmetricEncryptionType");
 	}
 
 	protected String keyStoreFile() {

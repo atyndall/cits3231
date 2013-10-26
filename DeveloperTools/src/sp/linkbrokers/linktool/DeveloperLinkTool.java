@@ -27,6 +27,7 @@ import sp.common.LinkingRequest;
 import sp.common.Node;
 import sp.common.SoftwareHouseRequest;
 import sp.exceptions.InvalidDeveloperLicenseFileException;
+import sp.exceptions.RunOptionException;
 
 /**
  * Program to replace .class files in a .jar compiled archive with those supplied
@@ -63,7 +64,7 @@ public class DeveloperLinkTool extends Node{
 	 * Contains the list of encrypted Software House linking requests
 	 */
 	private HashMap<String, SoftwareHouseRequest> softwareHouseRequests;
-	
+
 	/**
 	 * Creates a new developer instance, parses the command line arguments
 	 * and sends a request for the linked libraries to a Link Broker
@@ -71,27 +72,33 @@ public class DeveloperLinkTool extends Node{
 	 */
 	public static void main(String[] args) {
 		RunOptions runOptions = new DeveloperCommandLineParser().parseArguments(args);
-		DeveloperLinkTool developer = new DeveloperLinkTool(runOptions);
-
+		DeveloperLinkTool developer = null;
+		
+		try {
+			developer = new DeveloperLinkTool(runOptions);
+		} catch (RunOptionException e) {
+			e.printStackTrace();
+		}
+	
 		developer.sendRequestForExternalLibraries();
 	}
-	
+
 	/**
 	 * Initiates a new developer instance
 	 */
-	public DeveloperLinkTool(RunOptions runOptions) {
+	public DeveloperLinkTool(RunOptions runOptions) throws RunOptionException {
 		softwareHouseRequests = new HashMap<String, SoftwareHouseRequest>();
 		
 		setOptions(runOptions.getOptions());
 		createRequestFrom(runOptions.getLibraries());
-
-		try {
-			Registry reg = LocateRegistry.getRegistry(linkBrokerAddress(), linkBrokerPort(), new SslRMIClientSocketFactory());
-			ILinkingServer linkingSvr = (ILinkingServer) reg.lookup(linkingServerClassName);		
-		} catch (RemoteException | NotBoundException e) {
-            e.printStackTrace();
-            return;
-		}
+//
+//		try {
+//			Registry reg = LocateRegistry.getRegistry(linkBrokerAddress(), linkBrokerPort(), new SslRMIClientSocketFactory());
+////			ILinkingServer linkingSvr = (ILinkingServer) reg.lookup(linkingServerClassName);		
+//		} catch (RemoteException | NotBoundException e) {
+//            e.printStackTrace();
+//            return;
+//		}
 		
 		
 	}
@@ -170,12 +177,12 @@ public class DeveloperLinkTool extends Node{
 			
 			try {
 				request = new SoftwareHouseRequest(linkingRequest, 
-						getPublicKey(softwareHouse), symmetricEncryption());
+						getPublicKey(softwareHouse), getSymmetricEncryption());
 				
 				request.sign(getPrivateKey());
 				
 			} catch (NoSuchAlgorithmException e) {
-				logErrorAndExit("Unsupported encryption algorithm: " + symmetricEncryption());
+				logErrorAndExit("Unsupported encryption algorithm: " + getSymmetricEncryption());
 			}
 			
 			softwareHouseRequests.put(softwareHouse, request);
@@ -185,11 +192,14 @@ public class DeveloperLinkTool extends Node{
 		return licensesToUse;
 	}
 
-	private void setOptions(HashMap<String, String> customOptions) {
+	private void setOptions(HashMap<String, String> customOptions) throws RunOptionException{
 		options = new HashMap<String,String>();
 		options.putAll(getDefaultOptions());
 		options.putAll(customOptions);
 		setSystemOptions(customOptions);
+		
+		if(getPort() == -1)
+			throw new RunOptionException("Port was not defined");
 	}
 	
 	static private void setSystemOptions(HashMap<String, String> customOptions) {
@@ -227,5 +237,6 @@ public class DeveloperLinkTool extends Node{
 	static private void setDefault(String field, String value) {
 		defaultOptions.put(field, value);
 	}
+
 	
 }
