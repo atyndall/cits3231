@@ -54,7 +54,7 @@ public class DeveloperLicense implements Serializable {
 		Files.write(f.toPath(), lst, Charset.forName("UTF-8"));
 	}
 
-	private DeveloperLicense(String encryptedLicense, String identifier, String developerName) {
+	protected DeveloperLicense(String encryptedLicense, String identifier, String developerName) {
 		this.license = encryptedLicense;
 		this.identifier = identifier;
 		this.developerName = developerName;

@@ -14,7 +14,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import sp.common.Node;
-import sp.common.RunOptions;
+import sp.runoptions.RunOptions;
 
 public class LinkBroker extends Node{
 
@@ -25,7 +25,7 @@ public class LinkBroker extends Node{
 		runOptions = runOptions.subset(new String[]{"port"});
 		
 		try {
-			this.linkingServer = new LinkingServer(runOptions, this);
+			this.linkingServer = new LinkingServer(runOptions);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}		

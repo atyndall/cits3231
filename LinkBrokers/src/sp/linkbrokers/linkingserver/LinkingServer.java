@@ -10,24 +10,21 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
+import java.rmi.*;
+import java.rmi.registry.*;
+import java.rmi.server.*;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.*;
+import java.util.jar.*;
 
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
-import javax.security.cert.Certificate;
 
+import java.security.cert.Certificate;
 
 import sp.common.ChecksumGenerator;
 import sp.requests.SoftwareHouseRequest;
@@ -35,7 +32,7 @@ import sp.runoptions.RunOptions;
 import sp.softwarehouse.libprovidingserver.ILibProvidingServer;
 
 public class LinkingServer extends UnicastRemoteObject implements
-		RemoteLinkingServer {
+		ILinkingServer {
 
 	private static final long serialVersionUID = -1076731227201413447L;
 	public static final int port = 54164;
@@ -230,11 +227,7 @@ public class LinkingServer extends UnicastRemoteObject implements
 	
 	}
 
-	@Override
-	public byte[] performLink(SoftwareHouseRequest[] softwareHouseRequests,
-			byte[] inJar) throws RemoteException {
-		return null;
-	}
+	
 
 	public byte[] performLink(SoftwareHouseRequest req, byte[] inJarByte) {
 		// we read the jar file to a location on the disk
@@ -295,7 +288,6 @@ public class LinkingServer extends UnicastRemoteObject implements
 			e.printStackTrace();
 			return null;
 		}
-		return null;
 	}
 	
 	private HashMap<String, String> getDefaultOptions() {

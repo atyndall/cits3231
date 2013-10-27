@@ -26,9 +26,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import sp.linkbrokers.linkingserver.ILinkingServer;
 import sp.linkbrokers.linkingserver.LinkBroker;
 import sp.linkbrokers.linkingserver.LinkingServer;
-import sp.linkbrokers.linkingserver.RemoteLinkingServer;
 import sp.runoptions.RunOptions;
 
 public class LinkingBrokerTest {
@@ -208,11 +208,11 @@ public class LinkingBrokerTest {
 	}
 
 	private static void assertLinkingServerInRMIRegistry(){
-		RemoteLinkingServer linkingServer;
+		ILinkingServer linkingServer;
 		
 		try {
 			Registry registry = getRegistry();
-			linkingServer = (RemoteLinkingServer) registry.lookup(LINKING_SERVER_NAME);
+			linkingServer = (ILinkingServer) registry.lookup(LINKING_SERVER_NAME);
 			
 			assert(linkingServer instanceof LinkingServer);
 		} catch (RemoteException | NotBoundException e) {

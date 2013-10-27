@@ -3,8 +3,8 @@ package sp.linkbrokers.linkingserver;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import sp.common.ArgumentParser;
-import sp.common.RunOptions;
+import sp.runoptions.ArgumentParser;
+import sp.runoptions.RunOptions;
 
 public class LinkBrokerArgumentParser extends ArgumentParser{
 	private AllowedArguments allowedOptions;

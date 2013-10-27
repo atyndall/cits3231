@@ -14,10 +14,12 @@ import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import sp.common.LinkingRequest;
-import sp.common.SoftwareHouseRequest;
+import sp.requests.LinkRequest;
+import sp.requests.SoftwareHouseRequest;
 import sp.exceptions.InvalidDeveloperLicenseFileException;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
+
+// TODO: Uses completely wrong API
 
 public class SoftwareHouseRequestTest extends TestHelper {
 	
@@ -33,9 +35,9 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	static PrivateKey differentPrivateKey;
 	static PublicKey differentPublicKey;
 	
-	static LinkingRequest linkRequestForSingleLibrary;
-	static LinkingRequest linkRequestForMultipleLibraries;
-	static LinkingRequest emptyLinkingRequest;
+	static LinkRequest linkRequestForSingleLibrary;
+	static LinkRequest linkRequestForMultipleLibraries;
+	static LinkRequest emptyLinkingRequest;
 	
 	@BeforeClass
 	static public void setUp() throws NoSuchAlgorithmException{
@@ -67,11 +69,11 @@ public class SoftwareHouseRequestTest extends TestHelper {
 			e.printStackTrace();
 		}
 		
-		linkRequestForSingleLibrary = new LinkingRequest();
+		linkRequestForSingleLibrary = new LinkRequest();
 		linkRequestForSingleLibrary.addLibraries(libraryList, validLicenses); 
 		
-		linkRequestForMultipleLibraries = new LinkingRequest();
-		emptyLinkingRequest = new LinkingRequest();
+		linkRequestForMultipleLibraries = new LinkRequest();
+		emptyLinkingRequest = new LinkRequest();
 		
 		for(int i=1; i< libraryNames.length; i++){
 			libraryList.add(libraryNames[i]);
@@ -163,7 +165,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 	
 	
 	
-	private void assertIsNotSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
+	private void assertIsNotSameSoftwareHouseRequest(LinkRequest originalRequest, LinkRequest request) {
 		List<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		List<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		
@@ -175,7 +177,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		
 	}
 
-	private void assertIsSameSoftwareHouseRequest(LinkingRequest originalRequest, LinkingRequest request) {
+	private void assertIsSameSoftwareHouseRequest(LinkRequest originalRequest, LinkRequest request) {
 		List<String> requestLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		List<String> originalLibraryList = request.getLibraryList();  // TODO: update to work with new license structure
 		
@@ -186,7 +188,7 @@ public class SoftwareHouseRequestTest extends TestHelper {
 		}
 	}
 
-	private void modifyRequest(LinkingRequest originalRequest) {
+	private void modifyRequest(LinkRequest originalRequest) {
 		originalRequest.getLibraryList().clear();
 	}
 	

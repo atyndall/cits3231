@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.jar.JarInputStream;
 
+import sp.linkbrokers.linkingserver.ILinkingServer;
 import sp.requests.LinkRequest;
 import sp.requests.SoftwareHouseRequest;
 import sp.runoptions.RunOptions;
@@ -71,11 +72,11 @@ public class DeveloperLinkTool extends Node{
 			createRequestFrom(runOptions.getLibraries());
 			checkRequiredOptionsHaveBeenSet();
 			
-			RemoteLinkingServer linkingServer;
+			ILinkingServer linkingServer;
 			
 			try {
 				Registry registry = LocateRegistry.getRegistry(getLinkBrokerAddress(), getLinkBrokerPort());
-				linkingServer = (RemoteLinkingServer) registry.lookup(LINKING_SERVER_NAME );
+				linkingServer = (ILinkingServer) registry.lookup(LINKING_SERVER_NAME );
 			} catch (RemoteException | NotBoundException e) {
 				e.printStackTrace();
 			} 
