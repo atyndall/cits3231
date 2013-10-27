@@ -1,4 +1,4 @@
-package sp.requests;
+package sp.common;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -6,7 +6,7 @@ import java.util.List;
 
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 
-public class LinkRequest implements Serializable {
+public class LinkingRequest implements Serializable {
 	private static final long serialVersionUID = 2316319439688449010L;
 	
 	/**
@@ -17,7 +17,7 @@ public class LinkRequest implements Serializable {
 	private List<DeveloperLicense> licenseList;
 	private List<String> libraryList;
 	
-	public LinkRequest(){
+	public LinkingRequest(){
 //		this.license =  DeveloperLicense.fromStream(LinkingRequest.class.getResourceAsStream(TEST_LICENSE_NAME));
 		this.libraryList = new ArrayList<String>();
 		this.licenseList = new ArrayList<DeveloperLicense>();

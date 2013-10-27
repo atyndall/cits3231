@@ -2,6 +2,7 @@ package sp.softwarehouse.protectedlibrary;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -9,35 +10,24 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-
-import sp.exceptions.InvalidDeveloperLicenseFileException;
+import java.util.Scanner;
 
 public class DeveloperLicense implements Serializable {
 
 	private static final long serialVersionUID = -865416936996786148L;
-	static final String DELIMITER = "\\|";
-	
-	private String license;
+	private String lic;
 	private String developerName;
 	private String identifier;
 	
 	
-	public static DeveloperLicense createLicense(File file) throws InvalidDeveloperLicenseFileException, IOException {
-		String license = fileToString(file);
-		String[] licParts = license.split(DELIMITER);
-		
-		if(licParts.length != 3)
-			throw new InvalidDeveloperLicenseFileException("Malformed license: '" + license + "'");
-		
-		String encryptedLicense = licParts[0];
-		String identifier = licParts[1];
-		String developerName = licParts[2].trim();
-		
-		return new DeveloperLicense(encryptedLicense, identifier, developerName);
+	public DeveloperLicense(String encryptedLicense, String identifier, String developerName) {
+		this.lic = encryptedLicense;
+		this.identifier = identifier;
+		this.developerName = developerName;
 	}
 
 	public String getLicense() {
-		return license;
+		return lic;
 	}
 	
 	public String getIdentifier() {
@@ -48,38 +38,33 @@ public class DeveloperLicense implements Serializable {
 		return developerName;
 	}
 	
+	private static String convertFileToString(File file) throws IOException {
+		InputStream in = new FileInputStream(file);
+		byte[] b  = new byte[(int)file.length()];
+		int len = b.length;
+		int total = 0;
+
+		while (total < len) {
+		  int result = in.read(b, total, len - total);
+		  if (result == -1) {
+		    break;
+		  }
+		  total += result;
+		}
+
+		return new String(b, "UTF-8");
+	}
+	
+	public static DeveloperLicense fromFile(File f) throws IOException {
+		String lic = convertFileToString(f);
+		String[] licParts = lic.split("\\|");
+		return new DeveloperLicense(licParts[0], licParts[1], licParts[2].trim());
+	}
+	
 	public void toFile(File f) throws IOException {
 		List<String> lst = new ArrayList<String>(1);
-		lst.add(this.license + "|" + this.identifier + "|" + this.developerName);
+		lst.add(this.lic + "|" + this.identifier + "|" + this.developerName);
 		Files.write(f.toPath(), lst, Charset.forName("UTF-8"));
-	}
-
-	protected DeveloperLicense(String encryptedLicense, String identifier, String developerName) {
-		this.license = encryptedLicense;
-		this.identifier = identifier;
-		this.developerName = developerName;
-	}
-
-	private static String fileToString(File file) throws IOException {
-		InputStream inputStream = new FileInputStream(file);
-		
-		int fileLength = (int) file.length();
-		byte[] fileAsCharArray  = new byte[fileLength];
-		
-		int bytesReadSoFar = 0;
-	
-		while (bytesReadSoFar < fileLength) {
-		  int result = inputStream.read(fileAsCharArray, bytesReadSoFar, fileLength - bytesReadSoFar);
-		  
-		  if (result == -1)
-		    break;
-		  
-		  bytesReadSoFar += result;
-		}
-	
-		inputStream.close();
-		
-		return new String(fileAsCharArray, "UTF-8");
 	}
 	
 }

@@ -19,7 +19,8 @@ import java.security.KeyStore.ProtectionParameter;
 import java.security.cert.CertificateException;
 import java.util.jar.JarInputStream;
 
-import sp.requests.*;
+import sp.common.LinkingRequest;
+import sp.common.SoftwareHouseRequest;
 import sp.linkbrokers.linkingserver.LinkingServer;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 
@@ -92,9 +93,8 @@ public class TestLinking {
 		
 		
 		try {
-			// TODO: refactor to fit new API
-			LinkRequest lnk = new LinkRequest();
-			lnk.add("ScienceLib", DeveloperLicense.createLicense(new File(getResourceAsPath("/developer1-0.lic"))));
+			LinkingRequest lnk = new LinkingRequest();
+			lnk.add("ScienceLib", DeveloperLicense.fromFile(new File(getResourceAsPath("/developer1-0.lic"))));
 			SoftwareHouseRequest req = new SoftwareHouseRequest(lnk, key.getTrustedCertificate().getPublicKey(), "AES");
 			
 			LinkingServer ls = new LinkingServer();

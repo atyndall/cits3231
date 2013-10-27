@@ -5,7 +5,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Map;
 
-import sp.requests.SoftwareHouseRequest;
+import sp.common.SoftwareHouseRequest;
 import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
 
 public interface ILibProvidingServer extends Remote {

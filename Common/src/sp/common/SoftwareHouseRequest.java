@@ -1,4 +1,4 @@
-package sp.requests;
+package sp.common;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,7 +26,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-
 public class SoftwareHouseRequest implements Serializable {
 	private static final long serialVersionUID = -7527690235425159164L;
 	private static final String signatureAlgorithm = "SHA1withRSA";
@@ -35,6 +34,8 @@ public class SoftwareHouseRequest implements Serializable {
 	private byte[] senderSignature;
 	private SignedObject checksums;
 	private Certificate developerCert;
+	
+	private HashMap<String,String> errors;
 	
 	private class EncryptionReceipt {
 		SecretKey key;
@@ -52,19 +53,16 @@ public class SoftwareHouseRequest implements Serializable {
 		}
 	}
 	
-	public SoftwareHouseRequest(LinkRequest request, SignedObject checksums, 
-			Certificate devCertificate, PublicKey publicKey, String symmetricEncryption) 
+	public SoftwareHouseRequest(LinkingRequest request, SignedObject checksums, Certificate devCertificate, PublicKey publicKey, String symmetricEncryption) 
 			throws NoSuchAlgorithmException {
-		
 		this.checksums = checksums;
 		this.developerCert = devCertificate;
-		
 		EncryptionReceipt receipt = encryptRequest(request, symmetricEncryption);
 		encryptedRequest = receipt.getEncrypted();
 		symmetricEncryptionKey = encryptSymmetricKey(receipt.getKey(), publicKey);
 	}
 	
-	public LinkRequest getRequest(PrivateKey privateKey, String symmetricalEncryptionType) {
+	public LinkingRequest getRequest(PrivateKey privateKey, String symmetricalEncryptionType) {
 		SecretKey secretKey = decryptSymmetricKey(privateKey,symmetricalEncryptionType);
 		
 		byte[] decryptedRequest = null;
@@ -189,7 +187,7 @@ public class SoftwareHouseRequest implements Serializable {
 	 * @param softwareHouse Name of the Software House to encrypt the request for
 	 * @throws NoSuchAlgorithmException 
 	 */
-	private EncryptionReceipt encryptRequest(LinkRequest request, String symmetricEncryptionType) throws NoSuchAlgorithmException {
+	private EncryptionReceipt encryptRequest(LinkingRequest request, String symmetricEncryptionType) throws NoSuchAlgorithmException {
 		
 		byte[] encrypted = null;
 		SecretKey encryptionKey = null;
@@ -212,7 +210,7 @@ public class SoftwareHouseRequest implements Serializable {
 		return new EncryptionReceipt(encryptionKey, encrypted);
 	}
 	
-	private ByteArrayOutputStream serialiseRequest(LinkRequest request) {
+	private ByteArrayOutputStream serialiseRequest(LinkingRequest request) {
 		ByteArrayOutputStream serialisedRequest = new ByteArrayOutputStream();
 		ObjectOutputStream requestObjectOutputStream;
 		
@@ -225,16 +223,16 @@ public class SoftwareHouseRequest implements Serializable {
 		return serialisedRequest;
 	}
 	
-	private LinkRequest deserialiseRequest(byte[] serialisedRequest) {
+	private LinkingRequest deserialiseRequest(byte[] serialisedRequest) {
 		ByteArrayInputStream serialisedRequestInputStream = new ByteArrayInputStream(serialisedRequest);
 		ObjectInputStream requestObjectInputStream;
 		
-		LinkRequest request = null;
+		LinkingRequest request = null;
 		
 		try {
 			
 			requestObjectInputStream = new ObjectInputStream(serialisedRequestInputStream);
-			request = (LinkRequest) requestObjectInputStream.readObject();
+			request = (LinkingRequest) requestObjectInputStream.readObject();
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -245,4 +243,12 @@ public class SoftwareHouseRequest implements Serializable {
 		return request;
 	}
 
+	private String errorMessage(String errorCode) {
+		if(errors == null){
+			errors = new HashMap<String,String>();
+		}
+		
+		return errors.get(errorCode);
+		
+	}
 }

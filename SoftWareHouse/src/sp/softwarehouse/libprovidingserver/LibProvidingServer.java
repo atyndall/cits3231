@@ -37,8 +37,8 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
 import sp.common.ChecksumGenerator;
-import sp.requests.LinkRequest;
-import sp.requests.SoftwareHouseRequest;
+import sp.common.LinkingRequest;
+import sp.common.SoftwareHouseRequest;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 import sp.softwarehouse.protectedlibrary.Exceptions.InvalidLicenseException;
 import sp.softwarehouse.protectedlibrary.LicenseManager;
@@ -221,7 +221,7 @@ public class LibProvidingServer extends UnicastRemoteObject implements ILibProvi
 	public Map<String, byte[]> getClassesToLink(SoftwareHouseRequest req)
 			throws InvalidLicenseException, Exception {
 		
-		LinkRequest lreq = req.getRequest(key.getPrivateKey(), "AES");
+		LinkingRequest lreq = req.getRequest(key.getPrivateKey(), "AES");
 
 		List<String> libs = lreq.getLibraryList();
 		List<DeveloperLicense> licenses = lreq.getLicenses();
