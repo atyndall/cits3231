@@ -14,8 +14,6 @@ import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import sp.exceptions.RunOptionException;
-
 public abstract class Node extends LoggedItem {
 	protected static HashMap<String, String> defaultOptions;
 	
@@ -113,6 +111,10 @@ public abstract class Node extends LoggedItem {
 	}
 	
 	protected PublicKey getPublicKey(String node) {
+		return getCertificate(node).getPublicKey();
+	}
+	
+	protected Certificate getCertificate(String node) {
 		Certificate cert = null;
 		
 		try {
@@ -125,7 +127,7 @@ public abstract class Node extends LoggedItem {
 		if(cert == null)
 			logErrorAndExit("Unable to locate alias '" + node + "' in keyStore. All linking requests were cancelled.");
 		
-		return cert.getPublicKey();
+		return cert;
 	}
 	
 
@@ -193,4 +195,5 @@ public abstract class Node extends LoggedItem {
 		options.putAll(customOptions);
 		setSystemOptions(customOptions);
 	}
+	
 }

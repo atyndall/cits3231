@@ -1,9 +1,9 @@
 package sp.tests;
 
 
-import sp.common.RunOptions;
 import sp.linkbrokers.linkingserver.LinkBroker;
 import sp.linkbrokers.linkingserver.LinkingServer;
+import sp.runoptions.RunOptions;
 
 public class RunLinkServer implements Runnable{
 	LinkingServer linkingServer;

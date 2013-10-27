@@ -5,8 +5,13 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilePermission;
 import java.io.IOException;
 import java.io.InputStream;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,10 +22,14 @@ import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import sp.linkbrokers.linkingserver.LinkBroker;
+import sp.linkbrokers.linkingserver.LinkingServer;
+import sp.linkbrokers.linkingserver.RemoteLinkingServer;
+import sp.runoptions.RunOptions;
 
 public class LinkingBrokerTest {
 	private static String emptyJarFilePath;
@@ -31,6 +40,12 @@ public class LinkingBrokerTest {
 	
 	private static final String fileBContents = "Not fileA";
 	private static final String fileAContents = "Test File Contents";	
+	
+	private static Registry rmiRegistry;
+	private static String LINKING_SERVER_NAME = "LinkingServer";
+	private static String LINKING_SERVER_ADDRESS = "localhost";
+	private static int LINKING_SERVER_PORT = 12345;
+	private static RunOptions validRunOptions;
 	
 	@BeforeClass
 	static public void setUpClass(){
@@ -48,13 +63,28 @@ public class LinkingBrokerTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		
+		HashMap<String,String> options = new HashMap<String,String>();
+		options.put("port", String.valueOf(LINKING_SERVER_PORT));
+		
+		validRunOptions = new RunOptions(options, null);
 
 	}
 
 	@Test
+	public void shouldAddNewLinkingServerReferenceToRMIRegistry(){
+		ensureLinkingServerNotInRMIRegistry();
+		
+		new LinkBroker(validRunOptions);
+		
+		assertLinkingServerInRMIRegistry();
+	}
+	
+	@Test
 	public void shouldAddNewFilesToJar() {
 		try {
-			LinkBroker.addFilesToExistingJar(new File(emptyJarFilePath), listContainingFileA);
+			LinkingServer.addFilesToExistingJar(new File(emptyJarFilePath), listContainingFileA);
 		
 			assertArrayEquals(fileADigest,digestOfFileInJar(fileAHandle, emptyJarFilePath));
 	
@@ -70,7 +100,7 @@ public class LinkingBrokerTest {
 			File fileWithSameNameAsFileA = createTestFileWithContents(fileBContents);
 			String jarFilePath = createJarWithFile(fileWithSameNameAsFileA);
 			
-			LinkBroker.addFilesToExistingJar(new File(jarFilePath), listContainingFileA);
+			LinkingServer.addFilesToExistingJar(new File(jarFilePath), listContainingFileA);
 		
 			assertArrayEquals(fileADigest,digestOfFileInJar(fileAHandle, jarFilePath));
 	
@@ -79,6 +109,11 @@ public class LinkingBrokerTest {
 		}
 	}
 
+	@AfterClass
+	public static void tearDownClas(){
+		removeLinkingServerFromRMIRegistry();
+	}
+	
 	private static String createEmptyJar() {
 		return createJarWithFile(null);
 	}
@@ -172,4 +207,41 @@ public class LinkingBrokerTest {
 		return digest.digest();
 	}
 
+	private static void assertLinkingServerInRMIRegistry(){
+		RemoteLinkingServer linkingServer;
+		
+		try {
+			Registry registry = getRegistry();
+			linkingServer = (RemoteLinkingServer) registry.lookup(LINKING_SERVER_NAME);
+			
+			assert(linkingServer instanceof LinkingServer);
+		} catch (RemoteException | NotBoundException e) {
+			e.printStackTrace();
+		} 
+	}
+
+	private void ensureLinkingServerNotInRMIRegistry() {
+		try{
+			assertLinkingServerInRMIRegistry();
+		} catch(AssertionError e){
+			removeLinkingServerFromRMIRegistry();
+		}
+	}
+
+	private static Registry getRegistry() throws RemoteException {
+		if(rmiRegistry == null)
+			rmiRegistry = LocateRegistry.getRegistry(LINKING_SERVER_ADDRESS , LINKING_SERVER_PORT );
+		
+		return rmiRegistry;
+	}
+	
+	private static void removeLinkingServerFromRMIRegistry(){
+		try {
+			getRegistry().unbind(LINKING_SERVER_NAME);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		} catch (NotBoundException e) {
+		}
+	}
+	
 }

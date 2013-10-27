@@ -1,4 +1,4 @@
-package sp.linkbrokers.linktool;
+package sp.linkbrokers.linkingserver;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,44 +6,7 @@ import java.util.HashMap;
 import sp.runoptions.ArgumentParser;
 import sp.runoptions.RunOptions;
 
-public class DeveloperToolsArgumentParser extends ArgumentParser{
-	public class LibraryNameRecorder extends ArgumentRecorder{
-		HashMap<String,ArrayList<String>> libraries;
-		
-		public LibraryNameRecorder(HashMap<String,ArrayList<String>> libraries) {
-			super(null);
-			
-			this.libraries = libraries;
-			errorPrefix = "Library Error";
-		}
-
-		public boolean parse(String parameter){
-			String[] libraryDetails = parameter.split(":");
-			
-			if(libraryDetails.length == 2){
-				addLibraryDetailsToRequestList(libraryDetails);
-				return true;
-			} else {
-				error = "Invalid format: '" + parameter + "'"; 
-				return false;
-			}
-		}
-		
-		private void addLibraryDetailsToRequestList(String[] libraryDetails) {
-			final String softwareHouseName = libraryDetails[0];
-			final String libraryName = libraryDetails[0];
-
-			ArrayList<String> softwareHouseRequest = libraries.get(softwareHouseName);
-			
-			if(softwareHouseRequest == null){
-				libraries.put(softwareHouseName, new ArrayList<String>());
-				softwareHouseRequest = libraries.get(softwareHouseName); 
-			} 
-			
-			softwareHouseRequest.add(libraryName);
-		}
-	}
-
+public class LinkingServerArgumentParser extends ArgumentParser{
 	private AllowedArguments allowedOptions;
 	
 	/**
@@ -61,31 +24,21 @@ public class DeveloperToolsArgumentParser extends ArgumentParser{
 		argumentRecorder.setParameter("jarFile", allowed.getPrefix("jarFile"));
 		
 		for(int i=0; i<args.length; i++){
-			if(args[i].length() < 1)
-				continue;
 			
 			if(args[i].substring(0,1).equals("-")){
 				String tokenInFocus = args[i].substring(1,args[i].length());
 				
-				if(tokenInFocus.equals("libs")){
-						argumentRecorder = new LibraryNameRecorder(libraries);
-				} else {		
-					String prefix;
+				String prefix;
+				
+				if( (prefix = allowed.getPrefix(tokenInFocus)) != null){
+						argumentRecorder = new ArgumentRecorder(options);
 					
-					if( (prefix = allowed.getPrefix(tokenInFocus)) != null){
-						if(argumentRecorder instanceof LibraryNameRecorder)	
-							argumentRecorder = new ArgumentRecorder(options);
-						
-						argumentRecorder.setParameter(tokenInFocus, prefix);
-					} else {
-						logErrorAndExit("Unrecognised argument: -" + tokenInFocus);
-					}
+					argumentRecorder.setParameter(tokenInFocus, prefix);
+				} else {
+					logErrorAndExit("Unrecognised argument: -" + tokenInFocus);
 				}
 			} else {
 				argumentRecorder.parse(args[i]);
-				
-				if(argumentRecorder instanceof LibraryNameRecorder)
-					options.put("libs", "");
 			}
 			
 		}
@@ -95,10 +48,6 @@ public class DeveloperToolsArgumentParser extends ArgumentParser{
 				logErrorAndExit(allowed.getPrefix(argumentName) + " undefined or missing");
 		}
 		
-		if(libraries.isEmpty())
-			logErrorAndExit(new LibraryNameRecorder(libraries).getError() + 
-					"Undefined or missing.");
-		
 		return new RunOptions(options,libraries);
 	}
 		
@@ -106,19 +55,17 @@ public class DeveloperToolsArgumentParser extends ArgumentParser{
 	 * Displays the correct usage of the program on the command line
 	 */
 	protected void displayUsage(){
-		String usageString = "DeveloperTools";
+		String usageString = "LinkingServer ";
 		
 		for(String argumentName : allowedArguments().getRequiredArguments()){
 			usageString += " -" + argumentName + " " + allowedArguments().getPrefix(argumentName).replaceAll("\\s", "");
 		}
 		
-		display("Developer - Client application for linking .jar files with remote libraries."); 
+		display("LinkingServer - Server application for linking .jar files with remote libraries, request by Developers and delivered by SoftwareHouses."); 
 		emptyLine();
 		display("Usage:");
 		emptyLine();
 		display(usageString);
-		emptyLine();
-		display("	LicFilepath		- Directory path to folder containing current licenses");	
 		emptyLine();
 		display("Options:");
 		emptyLine();
@@ -133,11 +80,8 @@ public class DeveloperToolsArgumentParser extends ArgumentParser{
 			return allowedOptions;
 		
 		allowedOptions = new AllowedArguments();
-		allowedOptions.addRequired("jar", "Jar File", "Directory path to the .jar file to link to the remote libraries");
-		allowedOptions.addRequired("libs", "Libraries", "Space separated list of libraries to link with in the format SoftwareHouse:LibraryName");
 		allowedOptions.addRequired("port", "Port", "Port to send request to Link Broker from");
-		allowedOptions.addRequired("lbaddress", "Link Broker Address", "Address Link Broker can be reached on");
-		allowedOptions.addRequired("lbport", "Link Broker Port", "Port number Link Broker can be reached on");
+		allowedOptions.addOptional("regport", "RMI Port", "Port used for RMI Registry server; default is 1099.");
 		allowedOptions.addOptional("ks", "Key Store", "Location of the keystore.");
 		allowedOptions.addOptional("ksPassword", "Key Store Password", "Password for key store file; Assumed to be the same password to access all entries in the key store file.");
 		allowedOptions.addOptional("ksType", "Key Store Type", "Filetype of key store; currently ignored and defualts to .jks");

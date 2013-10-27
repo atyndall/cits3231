@@ -6,6 +6,6 @@ import sp.softwarehouse.protectedlibrary.ProtectedLibrary;
 /**
  * Provides an interface for the API.
  */
-interface IScienceLib extends ProtectedLibrary {
-	public int getScience();
+abstract class AScienceLib extends ProtectedLibrary {
+	public abstract int getScience();
 }

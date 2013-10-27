@@ -1,4 +1,4 @@
-package sp.common;
+package sp.requests;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,6 +13,10 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.SignedObject;
+import java.security.cert.Certificate;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -22,12 +26,15 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+
 public class SoftwareHouseRequest implements Serializable {
 	private static final long serialVersionUID = -7527690235425159164L;
 	private static final String signatureAlgorithm = "SHA1withRSA";
 	private byte[] encryptedRequest;
 	private byte[] symmetricEncryptionKey;
 	private byte[] senderSignature;
+	private SignedObject checksums;
+	private Certificate developerCert;
 	
 	private class EncryptionReceipt {
 		SecretKey key;
@@ -45,15 +52,19 @@ public class SoftwareHouseRequest implements Serializable {
 		}
 	}
 	
-	public SoftwareHouseRequest(LinkingRequest request, PublicKey publicKey, String symmetricEncryption) 
+	public SoftwareHouseRequest(LinkRequest request, SignedObject checksums, 
+			Certificate devCertificate, PublicKey publicKey, String symmetricEncryption) 
 			throws NoSuchAlgorithmException {
+		
+		this.checksums = checksums;
+		this.developerCert = devCertificate;
 		
 		EncryptionReceipt receipt = encryptRequest(request, symmetricEncryption);
 		encryptedRequest = receipt.getEncrypted();
 		symmetricEncryptionKey = encryptSymmetricKey(receipt.getKey(), publicKey);
 	}
 	
-	public LinkingRequest getRequest(PrivateKey privateKey, String symmetricalEncryptionType) {
+	public LinkRequest getRequest(PrivateKey privateKey, String symmetricalEncryptionType) {
 		SecretKey secretKey = decryptSymmetricKey(privateKey,symmetricalEncryptionType);
 		
 		byte[] decryptedRequest = null;
@@ -71,6 +82,20 @@ public class SoftwareHouseRequest implements Serializable {
 		}
 		
 		return deserialiseRequest(decryptedRequest);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Map<String, byte[]> getChecksums(PublicKey verificationKey) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException {
+		if (checksums.verify(verificationKey, Signature.getInstance("SHA1withRSA"))) {
+			try {
+				Map<String, byte[]> cout = (HashMap<String, byte[]>) checksums.getObject();
+				return cout;
+			} catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		return null; // should never happen
 	}
 
 	 public boolean isSigned() {
@@ -112,6 +137,10 @@ public class SoftwareHouseRequest implements Serializable {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	public Certificate getCertificate() {
+		return this.developerCert;
 	}
 
 	private byte[] encryptSymmetricKey(SecretKey secretKey, Key publicKey) {
@@ -160,7 +189,7 @@ public class SoftwareHouseRequest implements Serializable {
 	 * @param softwareHouse Name of the Software House to encrypt the request for
 	 * @throws NoSuchAlgorithmException 
 	 */
-	private EncryptionReceipt encryptRequest(LinkingRequest request, String symmetricEncryptionType) throws NoSuchAlgorithmException {
+	private EncryptionReceipt encryptRequest(LinkRequest request, String symmetricEncryptionType) throws NoSuchAlgorithmException {
 		
 		byte[] encrypted = null;
 		SecretKey encryptionKey = null;
@@ -183,7 +212,7 @@ public class SoftwareHouseRequest implements Serializable {
 		return new EncryptionReceipt(encryptionKey, encrypted);
 	}
 	
-	private ByteArrayOutputStream serialiseRequest(LinkingRequest request) {
+	private ByteArrayOutputStream serialiseRequest(LinkRequest request) {
 		ByteArrayOutputStream serialisedRequest = new ByteArrayOutputStream();
 		ObjectOutputStream requestObjectOutputStream;
 		
@@ -196,16 +225,16 @@ public class SoftwareHouseRequest implements Serializable {
 		return serialisedRequest;
 	}
 	
-	private LinkingRequest deserialiseRequest(byte[] serialisedRequest) {
+	private LinkRequest deserialiseRequest(byte[] serialisedRequest) {
 		ByteArrayInputStream serialisedRequestInputStream = new ByteArrayInputStream(serialisedRequest);
 		ObjectInputStream requestObjectInputStream;
 		
-		LinkingRequest request = null;
+		LinkRequest request = null;
 		
 		try {
 			
 			requestObjectInputStream = new ObjectInputStream(serialisedRequestInputStream);
-			request = (LinkingRequest) requestObjectInputStream.readObject();
+			request = (LinkRequest) requestObjectInputStream.readObject();
 			
 		} catch (IOException e) {
 			e.printStackTrace();

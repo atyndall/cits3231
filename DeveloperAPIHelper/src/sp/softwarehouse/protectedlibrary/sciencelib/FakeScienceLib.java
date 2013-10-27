@@ -1,12 +1,12 @@
 package sp.softwarehouse.protectedlibrary.sciencelib;
 
 
-import sp.softwarehouse.protectedlibrary.sciencelib.IScienceLib;
+import sp.softwarehouse.protectedlibrary.sciencelib.AScienceLib;
 
 /**
  * A non-real version of the API that the developer can use to test their code.
  */
-class FakeScienceLib implements IScienceLib {
+class FakeScienceLib extends AScienceLib {
 
 	public FakeScienceLib() {
 		

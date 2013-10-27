@@ -6,6 +6,6 @@ import sp.softwarehouse.protectedlibrary.ProtectedLibrary;
 /**
  * Provides an interface for the API.
  */
-interface IEnterpriseLib extends ProtectedLibrary {
-	public int getEnterprise();
+abstract class AEnterpriseLib extends ProtectedLibrary {
+	public abstract int getEnterprise();
 }

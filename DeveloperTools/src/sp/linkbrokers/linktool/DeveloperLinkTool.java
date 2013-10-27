@@ -1,19 +1,29 @@
 package sp.linkbrokers.linktool;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.SignedObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.jar.JarInputStream;
 
+import sp.requests.LinkRequest;
+import sp.requests.SoftwareHouseRequest;
+import sp.runoptions.RunOptions;
 import sp.softwarehouse.protectedlibrary.DeveloperLicense;
 import sp.common.LicenseFilter;
-import sp.common.LinkingRequest;
+import sp.common.ChecksumGenerator;
 import sp.common.Node;
-import sp.common.RunOptions;
-import sp.common.SoftwareHouseRequest;
 import sp.exceptions.InvalidDeveloperLicenseFileException;
 import sp.exceptions.RunOptionException;
 
@@ -37,6 +47,7 @@ public class DeveloperLinkTool extends Node{
 	static final int DEFAULT_LINKING_PORT = 54164;
 	static final String DEFAULT_RMI_LINKING_ADDRESS = "localhost";
 	static final String linkingServerClassName = "LinkingServer";
+	static final String DEFAULT_ENCRYPTION_TYPE = "RSA";
 	
 	/**
 	 * Contains the location of the .jar file to link external libraries to. This
@@ -48,6 +59,7 @@ public class DeveloperLinkTool extends Node{
 	 * Contains the list of encrypted Software House linking requests
 	 */
 	private HashMap<String, SoftwareHouseRequest> softwareHouseRequests;
+	private static final String LINKING_SERVER_NAME = "LinkingServer";
 
 	/**
 		 * Initiates a new developer instance
@@ -58,15 +70,15 @@ public class DeveloperLinkTool extends Node{
 			setOptions(runOptions.getOptions());
 			createRequestFrom(runOptions.getLibraries());
 			checkRequiredOptionsHaveBeenSet();
-	//
-	//		try {
-	//			Registry reg = LocateRegistry.getRegistry(linkBrokerAddress(), linkBrokerPort(), new SslRMIClientSocketFactory());
-	////			ILinkingServer linkingSvr = (ILinkingServer) reg.lookup(linkingServerClassName);		
-	//		} catch (RemoteException | NotBoundException e) {
-	//            e.printStackTrace();
-	//            return;
-	//		}
 			
+			RemoteLinkingServer linkingServer;
+			
+			try {
+				Registry registry = LocateRegistry.getRegistry(getLinkBrokerAddress(), getLinkBrokerPort());
+				linkingServer = (RemoteLinkingServer) registry.lookup(LINKING_SERVER_NAME );
+			} catch (RemoteException | NotBoundException e) {
+				e.printStackTrace();
+			} 
 			
 		}
 
@@ -77,9 +89,7 @@ public class DeveloperLinkTool extends Node{
 	 */
 	public static void main(String[] args){
 		RunOptions runOptions = new DeveloperToolsArgumentParser().parseArguments(args);
-		DeveloperLinkTool developer = null;
-		
-		developer = new DeveloperLinkTool(runOptions);
+		DeveloperLinkTool developer = new DeveloperLinkTool(runOptions);
 	
 		developer.sendRequestForExternalLibraries();
 	}
@@ -128,6 +138,7 @@ public class DeveloperLinkTool extends Node{
 			setDefault("keyStoreAlias", DEFAULT_KEYSTORE_ALIAS);
 			setDefault("symmetricEncryptionType", DEFAULT_SYMETRICAL_ENCRYPTION);
 			setDefault("lbaddress", DEFAULT_RMI_LINKING_ADDRESS);
+			setDefault("encryption", DEFAULT_ENCRYPTION_TYPE);
 			setSystemOptions(defaultOptions);
 		}
 		
@@ -159,7 +170,7 @@ public class DeveloperLinkTool extends Node{
 		List<File> licensesToUse = new ArrayList<File>();
 		
 		for(String softwareHouse : libraries.keySet()){
-			LinkingRequest linkingRequest = new LinkingRequest();
+			LinkRequest linkingRequest = new LinkRequest();
 			int numberOfLibraries = libraries.get(softwareHouse).size();
 			List<DeveloperLicense> licences = new ArrayList<DeveloperLicense>(numberOfLibraries);
 			
@@ -186,8 +197,17 @@ public class DeveloperLinkTool extends Node{
 			
 			SoftwareHouseRequest request = null;
 			
+			SignedObject signedChecksums = null;
+			
 			try {
-				request = new SoftwareHouseRequest(linkingRequest, 
+				signedChecksums = ChecksumGenerator.getSignedChecksums(getPrivateKey(),  new JarInputStream(new FileInputStream(jarFilePath)));
+			} catch (InvalidKeyException | SignatureException
+					| IOException e1) {
+				e1.printStackTrace();
+			}
+			
+			try {
+				request = new SoftwareHouseRequest(linkingRequest, signedChecksums, getCertificate(keyStoreAlias()),
 						getPublicKey(softwareHouse), getSymmetricEncryption());
 				
 				request.sign(getPrivateKey());

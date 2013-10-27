@@ -12,10 +12,10 @@ import java.util.HashMap;
 import org.junit.Before;
 import org.junit.Test;
 
-import sp.common.RunOptions;
 import sp.exceptions.RunOptionException;
 import sp.linkbrokers.linkingserver.LinkingServer;
 import sp.linkbrokers.linktool.DeveloperLinkTool;
+import sp.runoptions.RunOptions;
 
 public class SystemTest {
 	private static final int DEVELOPER_PORT = 1234; 
